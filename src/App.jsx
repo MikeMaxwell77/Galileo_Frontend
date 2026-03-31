@@ -4,25 +4,19 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
-import { AstronomyApiBodiesClient } from './astronomyAPI/Astronomy_api_interface'
+import { AstronomyBodiesInterface } from './astronomyAPI/BodiesApi'
 
-const bodiesTesting = {
-    fetchAllBodies: async () => {
-        try {
-            const response = await AstronomyApiBodiesClient.get("/");
-            console.log("SUCESS:", response.data);
-        } catch (error) {
-            console.error("API::ERROR::", error);
-        }
-        
-    }
-}
+
 
 function App() {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-      bodiesTesting.fetchAllBodies();
+    AstronomyBodiesInterface.FetchNamedBodies();
+    const SavLat = 32.06;
+    const SavLong = -81.15;
+    const SavElev = 0.0;
+    AstronomyBodiesInterface.FetchAllBodyPositions({latitude: SavLat, longitude: SavLong, elevation: SavElev});
   }, [])
   
 
