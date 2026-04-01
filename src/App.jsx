@@ -17,7 +17,7 @@ function App() {
     const SavLat = 32.06;
     const SavLong = -81.15;
     const SavElev = 0.0;
-    console.log("OneMonthAllBodiesSavannah:", await AstronomyBodiesInterface.FetchAllBodyPositions({latitude: SavLat, longitude: SavLong, elevation: SavElev}));
+    console.log("OneMonthAllBodiesSavannah:", await AstronomyBodiesInterface.FetchAllBodyPositions({ latitude: SavLat, longitude: SavLong, elevation: SavElev }));
 
     console.log("EventLookup::sun", await AstronomyBodiesInterface.FetchEvents(
       {
@@ -37,7 +37,7 @@ function App() {
       }
     ))
   }, [])
-  
+
 
   return (
     <>
