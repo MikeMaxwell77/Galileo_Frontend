@@ -11,12 +11,31 @@ import { AstronomyBodiesInterface } from './astronomyAPI/BodiesApi'
 function App() {
   const [count, setCount] = useState(0)
 
-  useEffect(() => {
-    AstronomyBodiesInterface.FetchNamedBodies();
+  // TO-DO: remove this testing stuff.
+  useEffect(async () => {
+    console.log("NamedBodies:", await AstronomyBodiesInterface.FetchNamedBodies());
     const SavLat = 32.06;
     const SavLong = -81.15;
     const SavElev = 0.0;
-    AstronomyBodiesInterface.FetchAllBodyPositions({latitude: SavLat, longitude: SavLong, elevation: SavElev});
+    console.log("OneMonthAllBodiesSavannah:", await AstronomyBodiesInterface.FetchAllBodyPositions({latitude: SavLat, longitude: SavLong, elevation: SavElev}));
+
+    console.log("EventLookup::sun", await AstronomyBodiesInterface.FetchEvents(
+      {
+        bodyid: "sun",
+        longitude: SavLong,
+        latitude: SavLat,
+        elevation: SavElev
+      }
+    ))
+
+    console.log("EventLookup::moon", await AstronomyBodiesInterface.FetchEvents(
+      {
+        bodyid: "moon",
+        longitude: SavLong,
+        latitude: SavLat,
+        elevation: SavElev
+      }
+    ))
   }, [])
   
 
