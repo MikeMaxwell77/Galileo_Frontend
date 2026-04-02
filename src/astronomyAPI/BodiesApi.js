@@ -5,39 +5,39 @@ import { AstronomyApiBodiesClient } from "./Astronomy_api_interface";
 * TEST useEffect to show Interface usage, an to potentially test : place this in app.jsx to test
 *
 * useEffect(() => {
-    const run = async() => {
-    console.log("NamedBodies:", await AstronomyBodiesInterface.FetchNamedBodies());
-    const SavLat = 32.06;
-    const SavLong = -81.15;
-    const SavElev = 0.0;
-    console.log("OneMonthAllBodiesSavannah:", await AstronomyBodiesInterface.FetchAllBodyPositions({ latitude: SavLat, longitude: SavLong, elevation: SavElev }));
+    const run = async () => {
+      console.log("NamedBodies:", await AstronomyBodiesInterface.FetchNamedBodies());
+      const SavLat = 32.06;
+      const SavLong = -81.15;
+      const SavElev = 0.0;
+      console.log("OneMonthAllBodiesSavannah:", await AstronomyBodiesInterface.FetchAllBodyPositionsWFN({ latitude: SavLat, longitude: SavLong, elevation: SavElev }));
 
-    console.log("EventLookup::sun", await AstronomyBodiesInterface.FetchEvents(
-      {
-        bodyid: "sun",
-        longitude: SavLong,
-        latitude: SavLat,
-        elevation: SavElev
-      }
-    ))
+      console.log("EventLookup::sun", await AstronomyBodiesInterface.FetchEvents(
+        {
+          bodyid: "sun",
+          longitude: SavLong,
+          latitude: SavLat,
+          elevation: SavElev
+        }
+      ))
 
-    console.log("EventLookup::moon", await AstronomyBodiesInterface.FetchEvents(
-      {
-        bodyid: "moon",
-        longitude: SavLong,
-        latitude: SavLat,
-        elevation: SavElev
-      }
-    ))
+      console.log("EventLookup::moon", await AstronomyBodiesInterface.FetchEvents(
+        {
+          bodyid: "moon",
+          longitude: SavLong,
+          latitude: SavLat,
+          elevation: SavElev
+        }
+      ))
 
-    console.log("SearchOrionFuzzy:", await AstronomySearchInterface.FetchObjectsByName(
-      {
-        objectSearchTerm: "orion",
-        exact: false
-      }
-    ))
+      console.log("SearchOrionFuzzy:", await AstronomySearchInterface.FetchObjectsByName(
+        {
+          objectSearchTerm: "orion",
+          exact: false
+        }
+      ))
     }
-    
+
     run();
   }, []) 
 */
@@ -105,17 +105,11 @@ export const AstronomyBodiesInterface = {
 
 
     },
-
-    FetchAllBodyPositions: async ({ longitude, latitude, elevation }) => {
+    FetchAllBodyPositions: async ({ longitude, latitude, elevation, now, untill }) => {
         // Prepare the needed params for https://api.astronomyapi.com/api/v2/bodies/positions
-        const now = new Date();
-        const untill = new Date(now);
-        untill.setDate(untill.getDate() + 7);
-        
-
+      
         const DateTimeRange = ComputeDateTimeRange({startDateTime: now, endDateTime: untill});
         //console.log("TimeDateRange", DateTimeRange);
-        
 
         const time = [
             String(now.getHours()).padStart(2, "0"),
@@ -159,7 +153,14 @@ export const AstronomyBodiesInterface = {
             return [];
         }
     }, // End FetchAllBodyPositions
+    FetchAllBodyPositionsWFN: async ({ longitude, latitude, elevation }) => {
+        const now = new Date();
+        const untill = new Date(now);
+        untill.setDate(untill.getDate() + 7);
 
+        return AstronomyBodiesInterface.FetchAllBodyPositions({longitude, latitude, elevation, now, untill});
+
+    },
     FetchEvents: async ({ bodyid, longitude, latitude, elevation }) => {
         // According to the Astronomy v2 api manual events are only available for the sun 
         // and the moon at the moment
