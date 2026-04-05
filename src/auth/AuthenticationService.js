@@ -4,12 +4,13 @@ const AUTH_BACKEND_URL = `${import.meta.env.VITE_GALILEO_BACKEND_API_ROUTE}/auth
 
 // HEAVILY inspired by the auth service in the demo project
 const AuthenticationService = {
-    Register : async (email, password, role) => {
+    AUTH_BACKEND_URL,
+    Register : async (username, email, password) => {
         try {
-            const response = await axios.post(`${API_URL}/register`, {
+            const response = await axios.post(`${AUTH_BACKEND_URL}/register`, {
+                username,
                 email,
                 password,
-                role,
             });
             return response.data;
         } catch (error) {
@@ -19,7 +20,7 @@ const AuthenticationService = {
     },
 
     Login : (token) => {
-        if (!token || token.split(".").length !== 3) {
+        if (!token) {
             console.error("Invalid AuthToken received:", token);
             return;
         }
@@ -35,22 +36,9 @@ const AuthenticationService = {
 
     },
 
-    getUserRole : () => {
-        const token = localStorage.getItem("token");
-        if (!token || token.split(".").length !== 3) return "GUEST";
-
-        try {
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            return payload.role || "GUEST";
-        } catch (error) {
-            console.error("Error decoding token:", error);
-            return "GUEST";
-        }
-    },
-
     getAuthHeader: () => {
         const token = localStorage.getItem("token");
-        return token && token.split(".").length === 3 ? { Authorization: `Bearer ${token}` } : {};
+        return token ? { Authorization: `Bearer ${token}` } : {};
     },
 
     
