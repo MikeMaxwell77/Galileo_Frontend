@@ -4,6 +4,7 @@ import './App.css'
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './astronomyAPI/BodiesApi'
 import Home from "./pages/Home";
+import ExplorePageDebug from './pages/ExplorePageDebug';
 
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<Home/>}/>
+        <Route path="/explore" element={<ExplorePageDebug/>}/>
 
         {/* Privileged ROUTES */}
 
