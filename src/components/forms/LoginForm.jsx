@@ -29,7 +29,7 @@ export default function LoginForm() {
                 throw new Error("Invalid token format");
             }
 
-            AuthService.login(token); // ✅ Store token properly
+            AuthenticationService.Login(token); // ✅ Store token properly
 
             setMessage("✅ Login successful! Redirecting...");
             //setTimeout(() => navigate("/"), 1500); // ✅ Redirect after 1.5 sec
