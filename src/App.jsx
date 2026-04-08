@@ -7,25 +7,36 @@ import Home from "./pages/Home";
 import ExplorePageDebug from './pages/ExplorePageDebug';
 import LoginTesting from './pages/LoginPageDebug';
 
+import HomePage     from "./pages/HomePage";
+import ExplorePage  from "./pages/ExplorePage";
+import CalendarPage from "./pages/CalendarPage";
+import AccountPage  from "./pages/AccountPage";
+import LoginPage    from "./pages/LoginPage";
 
 function App() {
-  
 
   return (
-   <div>
-    <Router>
-      <Routes>
-        
-        {/* PUBLIC ROUTES */}
-        <Route path="/" element={<Home/>}/>
-        <Route path="/explore" element={<ExplorePageDebug/>}/>
-        <Route path="/loginTest" element={<LoginTesting />}/>
+    <div>
+      <Router>
+        <Routes>
 
-        {/* Privileged ROUTES */}
+          {/* PUBLIC ROUTES */}
+          <Route path="/"         element={<LoginPage />} />
+          <Route path="/home"     element={<HomePage />} />
+          <Route path="/explore"  element={<ExplorePage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/account"  element={<AccountPage />} />
 
-      </Routes>
-    </Router>
-   </div>
+          {/* DEBUG ROUTES */}
+          <Route path="/debug/home"    element={<Home />} />
+          <Route path="/debug/explore" element={<ExplorePageDebug />} />
+          <Route path="/loginTest"     element={<LoginTesting />} />
+
+          {/* PRIVILEGED ROUTES */}
+
+        </Routes>
+      </Router>
+    </div>
   )
 }
 
