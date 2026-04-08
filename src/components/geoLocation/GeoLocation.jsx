@@ -1,50 +1,60 @@
 import { useEffect, useState } from 'react'
 
-class GeoLocationData {
-    constructor(lat, long, elev) {
-        this.createdAt = new Date();
-        this.lat = lat;
-        this.long = long;
-        this.elev = elev;
-    }
-
-    getCreatedAt() {
-        return this.createdAt;
-    }
 
 
-    getLatitude() {
-        return this.lat;
-    }
-
-    setLatitude(lat) {
-        this.lat = lat;
-    }
-
-    getLongitude() {
-        return this.long;
-    }
-
-    setLongitude(long) {
-        this.long = long;
-    }
-
-    getElevation() {
-        return this.elev;
-    }
-
-    setElevation(elev) {
-        this.elev = elev;
-    }
-
-}
-
-export default function GeoLocation() {
+export function useGeoLocation() {
 
     const [geoAPISupported, setGeoAPISupported] = useState(true);
     const [hasGeoData, setHasGeoData] = useState(false);
+    const [geoManualInput, setGeoManualInput] = useState({ longitude: 0, latitude: 0, elevation: 0 });
     const [geoAPIDenied, setGeoAPIDenied] = useState(false);
-    const [geoData, setGeoData] = useState(new GeoLocationData(0, 0, 0));
+    const [geoData, setGeoData] = useState(null);
+
+    const CreateGeoLocationData = (lat, long, elev) => {
+        return {
+            latitude: lat,
+            longitude: long,
+            elevation: elev || 0,
+            createdAt: new Date()
+        }
+    };
+
+    const getLocation = () => {
+        return new Promise((resolve, reject) => {
+
+            if (!navigator.geolocation) {
+                setGeoAPISupported(false);
+                reject("Geolocation not supported");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    let { latitude, longitude, altitude } = position.coords;
+
+                    const data = createGeoData(
+                        latitude,
+                        longitude,
+                        altitude || 0
+                    );
+
+                    setGeoData(data);
+                    setHasGeoData(true);
+                    setGeoAPIDenied(false);
+
+                    resolve(data); // 🔥 KEY
+                },
+                (error) => {
+                    if (error.code === error.PERMISSION_DENIED) {
+                        setGeoAPIDenied(true);
+                        setHasGeoData(false);
+                    }
+
+                    reject(error);
+                }
+            );
+        });
+    };
 
     const checkGeoAutoAPI = () => {
         if (!navigator.geolocation) {
@@ -62,7 +72,7 @@ export default function GeoLocation() {
                 altitude = 0;
             }
 
-            setGeoData(new GeoLocationData(latitude, longitude, altitude));
+            setGeoData(CreateGeoLocationData(latitude, longitude, altitude));
             setHasGeoData(true);
 
             console.log("GeoLocation data updated: ", geoData);
@@ -77,70 +87,24 @@ export default function GeoLocation() {
 
         });
 
-        if (geoAPIDenied) {
-            return false;
-        } else {
-            return true;
-        }
-
     }
 
-    const handleManualSubmit = (lat, long, elev) => {
-        const data = new GeoLocationData(
-            Number(lat),
-            Number(long),
-            Number(elev) || 0
-        );
-
+    const setManualLocation = (lat, long, elev) => {
+        const data = CreateGeoLocationData(lat, long, elev);
         setGeoData(data);
+        setGeoAPIDenied(false);
         setHasGeoData(true);
-        console.log("GeoLocation data updated (manual): ", geoData);
-        //setGeoAPIDenied(false); // user recovered
-
+        return data;
     };
 
 
-    return (
-        <div className="container fluid">
-            <h1>GeoLocation Test</h1>
-            <p>This is a test page for the GeoLocation component.</p>
-
-            <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>
-
-            < div className="container mt-4">
-                {!geoAPIDenied ? (
-                    <>
-                        <h2> GeoLocation Data (GeoLocationAPI):</h2>
-                        <p><strong>Latitude:</strong> {geoData.lat}</p>
-                        <p><strong>Longitude:</strong> {geoData.long}</p>
-                        <p><strong>Elevation:</strong> {geoData.elev} m</p>
-                        <p><strong>Data Timestamp:</strong> {geoData.createdAt.toString()}</p>
-                    </>
-                ) : (
-                    <>
-                        <h3>Enter your location manually</h3>
-
-                        <input id="lat" placeholder="Latitude" type="number" />
-                        <input id="long" placeholder="Longitude" type="number" />
-                        <input id="elev" placeholder="Elevation" type="number" />
-
-                        <button
-                            onClick={() =>
-                                handleManualSubmit(
-                                    document.getElementById("lat").value,
-                                    document.getElementById("long").value,
-                                    document.getElementById("elev").value
-                                )
-                            }
-                        >
-                            Submit
-                        </button>
-                    </>
-
-                )
-                }
-            </div>
-
-        </div >
-    );
+    return {
+        geoData,
+        hasGeoData,
+        geoAPIDenied,
+        geoAPISupported,
+        getLocation,      // callable
+        setManualLocation, // callable
+        checkGeoAutoAPI     // callable
+    };
 };

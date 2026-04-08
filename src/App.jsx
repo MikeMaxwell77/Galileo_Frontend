@@ -8,7 +8,7 @@ import { AstronomyBodiesInterface, AstronomySearchInterface } from './astronomyA
 import Home from "./pages/Home";
 import ExplorePageDebug from './pages/ExplorePageDebug';
 import LoginTesting from './pages/LoginPageDebug';
-import GeoLocation from './components/geoLocation/GeoLocation';
+import GeoLocationTestPage from './components/geoLocation/GeoLocationTestPage';
 
 
 function App() {
@@ -24,7 +24,7 @@ function App() {
           <Route path="/explore" element={<ExplorePageDebug />} />
           <Route path="/loginTest" element={<LoginTesting />} />
 
-          <Route path="/testGeo" element={<GeoLocation />} />
+          <Route path="/testGeo" element={<GeoLocationTestPage />} />
 
           {/* Privileged ROUTES */}
 
