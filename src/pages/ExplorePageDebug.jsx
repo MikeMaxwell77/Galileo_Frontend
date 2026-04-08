@@ -5,10 +5,10 @@ import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astrono
 export default function ExplorePageDebug() {
     const [posData, setPosData] = useState(null);
     const [bodyNames, setBodyNames] = useState(null);
-    const [observerPos, setObserverPos] = useState({ lat: 32.06, long: -81.15, elev:0})
+    const [observerPos, setObserverPos] = useState({ lat: 32.06, long: -81.15, elev: 0 })
     const [selectedBody, setSelectedBody] = useState("");
     const [selectedBodyData, setSelectedBodyData] = useState(null);
-    
+
     const loadData = async () => {
         let namesData = [];
         let bodyPosData = [];
@@ -16,7 +16,7 @@ export default function ExplorePageDebug() {
         try {
             // Get the bodies available in the position api
             const namesResponse = await AstronomyBodiesInterface.FetchNamedBodies();
-            
+
             namesData = namesResponse.data.bodies;
 
         } catch (err) {
@@ -27,11 +27,11 @@ export default function ExplorePageDebug() {
         try {
             // Fetch the position data a week forward
             const bodyPosRes = await AstronomyBodiesInterface.FetchAllBodyPositionsWFN({
-                    latitude:observerPos.lat,
-                    longitude: observerPos.long,
-                    elevation: observerPos.elev
-                });
-        
+                latitude: observerPos.lat,
+                longitude: observerPos.long,
+                elevation: observerPos.elev
+            });
+
             bodyPosData = bodyPosRes.data;
 
         } catch (err) {
@@ -48,14 +48,14 @@ export default function ExplorePageDebug() {
     useEffect(() => {
         const fetchData = async () => {
             const APIdata = await loadData();
-            
+
             setBodyNames(APIdata.names);
             setPosData(APIdata.positions)
 
         }
         fetchData()
 
-        
+
     }, [])
 
     useEffect(() => {
@@ -77,11 +77,11 @@ export default function ExplorePageDebug() {
     }, [selectedBody])
 
     return (
-        <div >
+        <div>
             <h1>Demo explore page</h1>
             <div>
                 <a>Select the body of interest: </a>
-                <select 
+                <select
                     value={selectedBody}
                     onChange={(e) => setSelectedBody(e.target.value)}
                 >
@@ -92,9 +92,9 @@ export default function ExplorePageDebug() {
                 </select>
             </div>
 
-            <div>
+            <div className="container-fluid">
                 <h3>Currently displays Alt-Az system (https://www.timeanddate.com/astronomy/horizontal-coordinate-system.html)</h3>
-                <table>
+                <table className="table border shadow">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -104,7 +104,7 @@ export default function ExplorePageDebug() {
                         </tr>
                     </thead>
                     <tbody>
-                        { selectedBodyData?.cells?.map((cell, i) => (
+                        {selectedBodyData?.cells?.map((cell, i) => (
                             <tr key={i}>
                                 <td>{cell.date.substring(0, 10)}</td>
                                 <td>{cell.position.horizontal.altitude.degrees}</td>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import "./../node_modules/bootstrap/dist/css/bootstrap.min.css"
 import './App.css'
+
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './astronomyAPI/BodiesApi'
 import Home from "./pages/Home";
@@ -9,23 +11,23 @@ import LoginTesting from './pages/LoginPageDebug';
 
 
 function App() {
-  
+
 
   return (
-   <div>
-    <Router>
-      <Routes>
-        
-        {/* PUBLIC ROUTES */}
-        <Route path="/" element={<Home/>}/>
-        <Route path="/explore" element={<ExplorePageDebug/>}/>
-        <Route path="/loginTest" element={<LoginTesting />}/>
+    <div>
+      <Router>
+        <Routes>
 
-        {/* Privileged ROUTES */}
+          {/* PUBLIC ROUTES */}
+          <Route path="/" element={<Home />} />
+          <Route path="/explore" element={<ExplorePageDebug />} />
+          <Route path="/loginTest" element={<LoginTesting />} />
 
-      </Routes>
-    </Router>
-   </div>
+          {/* Privileged ROUTES */}
+
+        </Routes>
+      </Router>
+    </div>
   )
 }
 
