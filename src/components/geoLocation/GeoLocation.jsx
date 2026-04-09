@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 
 
 
@@ -8,7 +8,18 @@ export function useGeoLocation() {
     const [hasGeoData, setHasGeoData] = useState(false);
     const [geoManualInput, setGeoManualInput] = useState({ longitude: 0, latitude: 0, elevation: 0 });
     const [geoAPIDenied, setGeoAPIDenied] = useState(false);
-    const [geoData, setGeoData] = useState(null);
+    const [geoData, setGeoData] = useState(() => {
+        const storedData = localStorage.getItem("GeoLocationData");
+
+        if (!storedData) return null; // the local storage is empty
+
+        const parsedData = JSON.parse(storedData);
+
+        return {
+            ...parsedData,
+            createdAt: new Date(parsedData.createdAt) // convert back to Date object
+        }
+    });
 
     const CreateGeoLocationData = (lat, long, elev) => {
         return {
@@ -92,12 +103,42 @@ export function useGeoLocation() {
     const setManualLocation = (lat, long, elev) => {
         const data = CreateGeoLocationData(lat, long, elev);
         setGeoData(data);
-        setGeoAPIDenied(true);
+        //setGeoAPIDenied(true);
         setHasGeoData(true);
         return data;
     };
 
+    const storeGeoDataLocally = () => {
+        if (geoData) {
+            localStorage.setItem("GeoLocationData", JSON.stringify(geoData));
+        }
+    }
 
+    const loadGeoDataFromLocalStorage = () => {
+        const storedData = localStorage.getItem("GeoLocationData");
+
+        if (!storedData) return null; // the local storage is empty
+
+        const parsedData = JSON.parse(storedData);
+
+        return {
+            ...parsedData,
+            createdAt: new Date(parsedData.createdAt) // convert back to Date object
+        }
+
+    }
+
+
+    // useEffects
+    useEffect(() => {
+        storeGeoDataLocally();
+    }, [geoData]);
+
+    useEffect(() => {
+        if (geoData) {
+            setHasGeoData(true);
+        }
+    }, [])
     return {
         geoData,
         hasGeoData,
