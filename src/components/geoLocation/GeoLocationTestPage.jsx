@@ -26,29 +26,32 @@ export default function GeoLocationTestPage() {
 
             {!hasGeoData && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
 
+            {!hasGeoData && geoAPIDenied && (
+                <div>
+                    <input id="lat" placeholder="Latitude" type="number" />
+                    <input id="long" placeholder="Longitude" type="number" />
+                    <input id="elev" placeholder="Elevation" type="number" />
+
+                    <button
+                        onClick={() =>
+                            handleManualSubmit(
+                                document.getElementById("lat").value,
+                                document.getElementById("long").value,
+                                document.getElementById("elev").value
+                            )
+                        }
+                    >
+                        Submit
+                    </button>
+                </div>
+            )}
+
             < div className="container mt-4">
                 {!geoAPIDenied ? (
                     <h3>Automatic GeoLocation data</h3>
                 ) : (
-                    <>
-                        <h3>Enter your location manually</h3>
 
-                        <input id="lat" placeholder="Latitude" type="number" />
-                        <input id="long" placeholder="Longitude" type="number" />
-                        <input id="elev" placeholder="Elevation" type="number" />
-
-                        <button
-                            onClick={() =>
-                                handleManualSubmit(
-                                    document.getElementById("lat").value,
-                                    document.getElementById("long").value,
-                                    document.getElementById("elev").value
-                                )
-                            }
-                        >
-                            Submit
-                        </button>
-                    </>
+                    <h3>Manual GeoLocation data</h3>
 
                 )
                 }

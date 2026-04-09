@@ -92,7 +92,7 @@ export function useGeoLocation() {
     const setManualLocation = (lat, long, elev) => {
         const data = CreateGeoLocationData(lat, long, elev);
         setGeoData(data);
-        setGeoAPIDenied(false);
+        setGeoAPIDenied(true);
         setHasGeoData(true);
         return data;
     };
