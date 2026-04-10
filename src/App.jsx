@@ -12,9 +12,13 @@ import Account from './pages/Account';
 import GeoLocationTestPage from './components/geoLocation/GeoLocationTestPage';
 
 
+import HomePage     from "./pages/HomePage";
+import ExplorePage  from "./pages/ExplorePage";
+import CalendarPage from "./pages/CalendarPage";
+import AccountPage  from "./pages/AccountPage";
+import LoginPage    from "./pages/LoginPage";
 
 function App() {
-
 
   return (
     <div>
@@ -22,14 +26,18 @@ function App() {
         <Routes>
 
           {/* PUBLIC ROUTES */}
-          <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<ExplorePageDebug />} />
-          <Route path="/loginTest" element={<LoginTesting />} />
-          <Route path="/account" element={<Account />} />
+          <Route path="/"         element={<LoginPage />} />
+          <Route path="/home"     element={<HomePage />} />
+          <Route path="/explore"  element={<ExplorePage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/account"  element={<AccountPage />} />
 
-          <Route path="/testGeo" element={<GeoLocationTestPage />} />
+          {/* DEBUG ROUTES */}
+          <Route path="/debug/home"    element={<Home />} />
+          <Route path="/debug/explore" element={<ExplorePageDebug />} />
+          <Route path="/loginTest"     element={<LoginTesting />} />
 
-          {/* Privileged ROUTES */}
+          {/* PRIVILEGED ROUTES */}
 
         </Routes>
       </Router>
