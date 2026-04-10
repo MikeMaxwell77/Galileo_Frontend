@@ -8,6 +8,7 @@ import { AstronomyBodiesInterface, AstronomySearchInterface } from './astronomyA
 import Home from "./pages/Home";
 import ExplorePageDebug from './pages/ExplorePageDebug';
 import LoginTesting from './pages/LoginPageDebug';
+import Account from './pages/Account';
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/explore" element={<ExplorePageDebug />} />
           <Route path="/loginTest" element={<LoginTesting />} />
+          <Route path="/account" element={<Account />} />
 
           {/* Privileged ROUTES */}
 
