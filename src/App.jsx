@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import "./../node_modules/bootstrap/dist/css/bootstrap.min.css"
 import './App.css'
+
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './astronomyAPI/BodiesApi'
 import Home from "./pages/Home";
 import ExplorePageDebug from './pages/ExplorePageDebug';
 import LoginTesting from './pages/LoginPageDebug';
+import Account from './pages/Account';
+import GeoLocationTestPage from './components/geoLocation/GeoLocationTestPage';
+
 
 import HomePage     from "./pages/HomePage";
 import ExplorePage  from "./pages/ExplorePage";

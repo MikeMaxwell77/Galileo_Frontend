@@ -49,7 +49,29 @@ const AuthenticationService = {
     
     clearToken: () => {
         localStorage.removeItem("token");
+    },
+
+    // ✅ Check if a token exists and is valid
+    isAuthenticated: () => {
+    const token = localStorage.getItem("token");
+    if (!token || token.split(".").length !== 3) return false;
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
+      const expiryTime = payload.exp * 1000;
+      if (Date.now() >= expiryTime) {
+        AuthService.logout();
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("Invalid token:", error);
+      AuthService.logout();
+      return false;
     }
+  },
+
+  
 
 }
 
