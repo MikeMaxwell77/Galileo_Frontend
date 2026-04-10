@@ -52,6 +52,13 @@ export default function UpdateAccount() {
     }
   };
 
+  const deleteAccount = async (id) => {
+    await axios.delete(`${API_BASE_URL}/account/${id}`, {
+      headers: AuthenticationService.getAuthHeader(),
+    });
+    loadUsers();
+  };
+
   const loadAccount = async () => {
     try {
       const result = await axios.get(`${API_BASE_URL}/account/${id}`, {
@@ -96,6 +103,7 @@ export default function UpdateAccount() {
             </div>
 
             <button type="submit" className="btn btn-outline-primary">Submit</button>
+            <button type="delete" className="btn btn-outline-danger" onClick={() => deleteAccount(id)}>Delete Account</button>
             <Link className="btn btn-outline-danger mx-2" to="/">Cancel</Link>
           </form>
         </div>
