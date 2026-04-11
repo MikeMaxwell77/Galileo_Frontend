@@ -41,6 +41,13 @@ export default function ExplorePage() {
     { ...prev, [id]: !prev[id] })
   );
 
+  const handleManualSubmit = (lat, long, elev) => {
+    setManualLocation(lat, long, elev);
+
+    //setGeoAPIDenied(false); // user recovered
+
+  };
+
   const setEventIcon = (type_id) => {
     switch (type_id){
       //https://icons.getbootstrap.com/ 
@@ -243,12 +250,51 @@ export default function ExplorePage() {
               <>
                 <h2>Share Location</h2>
                 <p>Enter your location manually or enable browser access.</p>
+              
+                {!hasGeoData && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
 
-                <input
-                  type="text"
-                  placeholder="City or coordinates..."
-                  className="form-control"
-                />
+                {!hasGeoData && geoAPIDenied && (
+                  <div>
+                    <input id="lat" placeholder="Latitude" type="number" />
+                    <input id="long" placeholder="Longitude" type="number" />
+                    <input id="elev" placeholder="Elevation" type="number" />
+
+                    <button
+                      onClick={() =>
+                        handleManualSubmit(
+                          document.getElementById("lat").value,
+                          document.getElementById("long").value,
+                          document.getElementById("elev").value
+                        )
+                      }
+                    >
+                      Submit
+                    </button>
+                  </div>
+                )}
+
+                < div className="container mt-4">
+                  {!geoAPIDenied ? (
+                    <h3>Automatic GeoLocation data</h3>
+                  ) : (
+
+                    <h3>Manual GeoLocation data</h3>
+
+                  )
+                  }
+                </div>
+
+                <div className="container mt-4">
+                  {hasGeoData && (
+                    <div>
+                      <h3>Current GeoLocation Data:</h3>
+                      <p>Latitude: {geoData.latitude}</p>
+                      <p>Longitude: {geoData.longitude}</p>
+                      <p>Elevation: {geoData.elevation}</p>
+                      <p>Timestamp: {geoData.createdAt.toString()}</p>
+                    </div>
+                  )}
+                </div>
 
                 <div className="d-flex gap-2 mt-3">
                   <button className="btn-warp">Submit</button>
