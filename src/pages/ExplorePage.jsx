@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
+
+import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
 
 const SIGNALS = [
   { id: 1, icon: "rocket_launch", iconColor: "var(--clr-primary)", glowColor: "rgba(224,142,254,0.05)", title: "Stellar Documentation", desc: "A curated repository of technical specifications for warp drive maintenance and navigation.", tags: [{ label: "Archive", color: "var(--clr-secondary)", border: "rgba(186,146,250,0.2)" }, { label: "Active", color: "var(--clr-tertiary)", border: "rgba(255,231,146,0.2)" }], scanned: "0.4s ago", saved: true },
@@ -19,7 +23,79 @@ export default function ExplorePage() {
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
 
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const toggleBookmark = (id) => setBookmarks((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const setEventIcon = (type_id) => {
+    switch (type_id){
+      case "STR":
+        return "Star"
+      case "SNR":
+        return "Super Nova Remnant";
+      case "G":
+        return "Galaxy"
+    }
+  }
+
+  const mapAstronomySearchResToEventObj = (obj) => {
+    return {
+      id: obj.id,
+      title: obj.name,
+      desc: `${obj.type.name} in ${obj.position.constellation.name}`,
+      icon: setEventIcon(obj.type.id) ,
+
+      equatorial_pos: obj.position.equatorial,
+      crossIdentification: obj.crossIdentification,
+
+      iconColor: "var(--clr-primary)",
+      glowColor: "rgba(224,142,254,0.05)",
+      tags: [
+        {
+          label: obj.type.name,
+          color: "var(--clr-secondary)",
+          border: "rgba(186,146,250,0.2)"
+        },
+        ...(obj.subType?.name
+          ? [{
+            label: obj.subType.name,
+            color: "var(--clr-tertiary)",
+            border: "rgba(255,231,146,0.2)"
+          }]
+          : [])
+      ],
+      scanned: obj.position.equatorial.rightAscension.string
+
+    }
+  }
+
+  useEffect(() => {
+    if (!query) return;
+    setLoading(true);
+
+    const searchForObjects = async () => {
+      try {
+        const response = await AstronomySearchInterface.FetchObjectsByName(
+          {
+            objectSearchTerm: query.toString(),
+            exact: false
+          }
+        )
+
+        const mapped = response.data.map(mapAstronomySearchResToEventObj);
+        setEvents(mapped);
+        console.log(mapped);
+      } catch (error) {
+        console.error("Search for object api request failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    searchForObjects();
+
+  }, [query])
 
   return (
     <div className="page-root">
@@ -77,7 +153,7 @@ export default function ExplorePage() {
                 <div className="search-box">
                   <span className="material-symbols-outlined search-icon">search</span>
                   <input className="search-input" type="text" placeholder="Search the nebula for websites, tags, or users..." value={query} onChange={(e) => setQuery(e.target.value)} />
-                  <button className="btn-scan">SCAN</button>
+                  <button className="btn-scan" onClick={() => setQuery(query)}>SCAN</button>
                 </div>
               </div>
             </div>
@@ -95,32 +171,13 @@ export default function ExplorePage() {
           </div>
 
           <div className="row g-4">
-            {SIGNALS.map((sig) => (
+            {events.length > 0 && events.map((sig) => (
               <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
-                <div className="signal-card h-100">
-                  <div className="card-glow" style={{ background: sig.glowColor }} />
-                  <div className="d-flex justify-content-between align-items-start mb-4">
-                    <div className="card-icon-wrap">
-                      <span className="material-symbols-outlined" style={{ color: sig.iconColor }}>{sig.icon}</span>
-                    </div>
-                    <button className={`bookmark-btn ${bookmarks[sig.id] ? "saved" : ""}`} onClick={() => toggleBookmark(sig.id)}>
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: bookmarks[sig.id] ? "'FILL' 1" : "'FILL' 0" }}>bookmark</span>
-                    </button>
-                  </div>
-                  <h3 className="font-headline fw-bold card-title">{sig.title}</h3>
-                  <p className="card-desc">{sig.desc}</p>
-                  {sig.tags.length > 0 && (
-                    <div className="d-flex gap-2 mb-3">
-                      {sig.tags.map((tag) => (
-                        <span key={tag.label} className="tag-chip" style={{ color: tag.color, border: `1px solid ${tag.border}` }}>{tag.label}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="d-flex justify-content-between align-items-center card-footer-row">
-                    <span className="scan-time">Last Scanned: {sig.scanned}</span>
-                    <a href="#" className="open-signal-link">OPEN SIGNAL <span className="material-symbols-outlined">arrow_forward</span></a>
-                  </div>
-                </div>
+                <ExplorePageEvent
+                  data={sig}
+                  isSaved={bookmarks[sig.id]}
+                  onToggleBookmark={toggleBookmark}
+                />
               </div>
             ))}
           </div>
