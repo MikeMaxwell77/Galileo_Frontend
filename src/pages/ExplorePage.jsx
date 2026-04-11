@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import "./ExplorePage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
+import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
 
 import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
+
 
 const SIGNALS = [
   { id: 1, icon: "rocket_launch", iconColor: "var(--clr-primary)", glowColor: "rgba(224,142,254,0.05)", title: "Stellar Documentation", desc: "A curated repository of technical specifications for warp drive maintenance and navigation.", tags: [{ label: "Archive", color: "var(--clr-secondary)", border: "rgba(186,146,250,0.2)" }, { label: "Active", color: "var(--clr-tertiary)", border: "rgba(255,231,146,0.2)" }], scanned: "0.4s ago", saved: true },
@@ -20,22 +23,37 @@ const NAV_ITEMS = [
 ];
 
 export default function ExplorePage() {
+  const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
+
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const toggleBookmark = (id) => setBookmarks((prev) => ({ ...prev, [id]: !prev[id] }));
+  const [modal, setModal] = useState({
+    type: null,
+    data: null
+  })
+
+  const toggleBookmark = (id) => setBookmarks((prev) => (
+    // send the bookmark to the backend
+    { ...prev, [id]: !prev[id] })
+  );
 
   const setEventIcon = (type_id) => {
     switch (type_id){
-      case "STR":
+      //https://icons.getbootstrap.com/ 
+      default:
         return "Star"
-      case "SNR":
-        return "Super Nova Remnant";
-      case "G":
-        return "Galaxy"
+      case "STRss":
+        return "Star"
+      case "SNRss":
+        //"Super Nova Remnant";
+        return "Starburst";
+      case "Gss":
+        //"Galaxy"
+        return "Sparkly"
     }
   }
 
@@ -158,7 +176,7 @@ export default function ExplorePage() {
               </div>
             </div>
             <div className="col-12 col-md-4">
-              <button className="share-btn">
+              <button className="share-btn" onClick={() => setModal({ type: "location", data: null })}>
                 <span className="material-symbols-outlined">share_location</span>
                 <span className="font-headline fw-bold">SHARE LOCATION</span>
               </button>
@@ -177,6 +195,7 @@ export default function ExplorePage() {
                   data={sig}
                   isSaved={bookmarks[sig.id]}
                   onToggleBookmark={toggleBookmark}
+                  onOpen={()=> setModal({type:"event", data:sig})}
                 />
               </div>
             ))}
@@ -197,6 +216,55 @@ export default function ExplorePage() {
         <button className="mobile-nav-btn"><span className="material-symbols-outlined">calendar_month</span></button>
         <button className="mobile-nav-btn"><span className="material-symbols-outlined">bookmarks</span></button>
       </div>
+
+      {modal.type && (
+        <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
+
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+
+            {/* EVENT MODAL */}
+            {modal.type === "event" && (
+              <>
+                <h2>{modal.data.title}</h2>
+                <p>{modal.data.desc}</p>
+
+                <div className="d-flex gap-2 mb-3">
+                  {modal.data.tags?.map(tag => (
+                    <span key={tag.label}>{tag.label}</span>
+                  ))}
+                </div>
+
+                <p><strong>Scanned:</strong> {modal.data.scanned}</p>
+              </>
+            )}
+
+            {/* LOCATION MODAL */}
+            {modal.type === "location" && (
+              <>
+                <h2>Share Location</h2>
+                <p>Enter your location manually or enable browser access.</p>
+
+                <input
+                  type="text"
+                  placeholder="City or coordinates..."
+                  className="form-control"
+                />
+
+                <div className="d-flex gap-2 mt-3">
+                  <button className="btn-warp">Submit</button>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setModal({ type: null, data: null })}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

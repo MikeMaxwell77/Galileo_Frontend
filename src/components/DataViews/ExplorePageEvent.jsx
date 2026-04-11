@@ -8,7 +8,7 @@ const eventTemplate = {
 
 }
 
-export default function ExplorePageEvent({ data, isSaved, onToggleBookmark }) {
+export default function ExplorePageEvent({ data, isSaved, onToggleBookmark, onOpen }) {
 
     return (
         <div className="signal-card h-100">
@@ -45,11 +45,12 @@ export default function ExplorePageEvent({ data, isSaved, onToggleBookmark }) {
 
             <div className="d-flex justify-content-between align-items-center card-footer-row">
                 <span className="scan-time">Last Scanned:</span>
-                <a href="#" className="open-signal-link">
+                <button className="open-signal-link" onClick={onOpen}>
                     OPEN SIGNAL
                     <span className="material-symbols-outlined">arrow_forward</span>
-                </a>
+                </button>
             </div>
+
         </div>
     );
 }
