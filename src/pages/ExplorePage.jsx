@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 
 export default function ExplorePage() {
   const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
+  const navigate = useNavigate();
 
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
@@ -48,10 +50,31 @@ export default function ExplorePage() {
   })
 
 
-  const toggleBookmark = (id) => setBookmarks((prev) => (
-    // send the bookmark to the backend
-    { ...prev, [id]: !prev[id] })
-  );
+  const toggleBookmark = async (id) => {
+    if (!AuthenticationService.isAuthenticated()) {
+      setModal({ type: "login", data: null });
+      return;
+    }
+
+    const isCurrentlySaved = bookmarks[id];
+
+    try {
+      if (isCurrentlySaved) {
+        await BookmarkService.removeBookmark(id);
+      } else {
+        await BookmarkService.addBookmark(id);
+      }
+
+      // update UI after success
+      setBookmarks(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }));
+
+    } catch (err) {
+      console.error("Bookmark failed", err);
+    }
+  };
 
   const handleManualSubmit = (lat, long, elev) => {
     setManualLocation(lat, long, elev);
@@ -65,13 +88,17 @@ export default function ExplorePage() {
     setModal({type: "login", data:null})
   }
 
+  const handleAccountSymbol = () => {
+    navigate("/account")
+  }
+
   const TryLogin = async () => {
     setLoginFailed(false);
-    const username = document.getElementById("username").value;
+    const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
-      const res = await AuthenticationService.Login(username, password);
+      const res = await AuthenticationService.Login(email, password);
 
       if (res) {
         setIsLogedIn(true);
@@ -270,7 +297,7 @@ export default function ExplorePage() {
           <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
         </div>
         <div className="d-flex align-items-center gap-3">
-          <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
+          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
           
           {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
@@ -460,7 +487,7 @@ export default function ExplorePage() {
 
                 {loginFailed && (<p className="fw-bold text-danger">Login Failed!</p>)}
 
-                <input id="username" placeholder="Username" className="form-control mb-2" />
+                <input id="email" placeholder="email" className="form-control mb-2" />
                 <input id="password" type="password" placeholder="Password" className="form-control mb-2" />
 
                 <div className="d-flex gap-2 mt-3">
