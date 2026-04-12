@@ -8,6 +8,8 @@ export default function BookmarksDebug() {
     const [authenticated, setAuthenticated] = useState(false);
     const [data, setData] = useState([]);
 
+    const [otherData, setOtherData] = useState([]);
+
     const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
 
     useEffect(() => {
@@ -25,7 +27,13 @@ export default function BookmarksDebug() {
     const handleLoadBookmarks = async () => {
         const bookmarksData = await BookmarkService.GetAuthUserBookmarks();
         if (bookmarksData) setData(bookmarksData);
-        console.log(bookmarksData)
+        //console.log(bookmarksData)
+    }
+
+    const handleLoadOtherUserBookmarks = async (userID) => {
+        const otherBMs = await BookmarkService.GetBookmarks(userID);
+        if (otherBMs ) setOtherData(otherBMs)
+        console.log(otherBMs);
     }
 
     return (
@@ -70,33 +78,6 @@ export default function BookmarksDebug() {
                             
                         </div>
                     </div>
-                </div>
-
-                
-                <div className="col-md-6">
-
-    
-
-                    
-                    <div className="card">
-                        <div className="card-header">Input</div>
-                        <div className="card-body">
-                            <form id="testForm">
-                                <div className="mb-3">
-                                    <label className="form-label">Object API identifier</label>
-                                    <input type="text" className="form-control" id="objAPIid" placeholder="Enter object API id"/>
-                                </div>
-
-
-                                <button type="button" className="btn btn-primary" onClick={() => handleCreateBookmark(document.getElementById("objAPIid").value)}>CreateBookmark</button>
-                            </form>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div className="col-md-6">
-
 
                     <div className="card mb-3">
                         <div className="card-header">My saved bookmarks</div>
@@ -116,9 +97,55 @@ export default function BookmarksDebug() {
                             ))}
                         </div>
                     </div>
-                    
+                </div>
+
+                
+                <div className="col-md-6">
+
+
+                    <div className="card">
+                        <div className="card-header">Input</div>
+                        <div className="card-body">
+                            <form id="testForm">
+                                <div className="mb-3">
+                                    <label className="form-label">Object API identifier</label>
+                                    <input type="text" className="form-control" id="objAPIid" placeholder="Enter object API id"/>
+                                </div>
+
+
+                                <button type="button" className="btn btn-primary" onClick={() => handleCreateBookmark(document.getElementById("objAPIid").value)}>CreateBookmark</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">Search for another users bookmarks</div>
+                        <div className="card-body">
+                            <form id="testForm">
+                                <div className="mb-3">
+                                    <label className="form-label">Query user id</label>
+                                    <input type="text" className="form-control" id="queryUserId" placeholder="Enter User id" />
+                                </div>
+
+                                <button type="button" className="btn btn-primary" onClick={() => handleLoadOtherUserBookmarks(document.getElementById("queryUserId").value)}>CreateBookmark</button>
+                            </form>
+
+                            <div>
+                                {otherData && otherData.map((item) => (
+                                    <div key={item.id} className="card">
+                                        <h3>{item.api_identifier}</h3>
+                                        <p>bkid: {item.id}</p>
+                                        <p>Lat: {item.latitude}</p>
+                                        <p>Lon: {item.longitude}</p>
+                                        <p>Time: {new Date(item.timestamp * 1000).toLocaleString()}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
+
             </div>
         </div>
     )

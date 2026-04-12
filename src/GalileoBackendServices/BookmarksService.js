@@ -54,6 +54,22 @@ const BookmarkService = {
             console.error("Fetch user bookmarks error:", error.response?.data || error.message);
             throw error;
         }
+    },
+    GetBookmarks: async (userID) => {
+        if (!AuthenticationService.isAuthenticated()) return;
+        
+        try {
+            const response = await axios.get(`${BOOKMARKS_BACKEND_URL}/${userID}`, {},
+                {
+                    headers: AuthenticationService.getAuthHeader()
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            console.error("Fetch user bookmarks error:", error.response?.data || error.message);
+            throw error;
+        }
 
     }
 
