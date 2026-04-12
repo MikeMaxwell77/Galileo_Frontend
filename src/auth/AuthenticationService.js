@@ -26,6 +26,27 @@ const AuthenticationService = {
         }
         localStorage.setItem("AuthToken", token);
     },
+    Login : async (email, password) => {
+        try {
+            const response = await axios.post(`${AUTH_BACKEND_URL}/login`, {
+                email: email,
+                password: password,
+            });
+
+            const token = response.data; // adjust based on backend
+
+            if (!token) {
+                throw new Error("No token received");
+            }
+
+            localStorage.setItem("AuthToken", token);
+
+            return token;
+        } catch (error) {
+            console.error("Login error:", error.response?.data || error.message);
+            throw error;
+        }
+    },
 
     Logout : () => {
         const confirmLogout = window.confirm("Are you sure you want to log out?");

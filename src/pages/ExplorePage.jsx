@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 
 export default function ExplorePage() {
   const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
+  const navigate = useNavigate();
 
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
@@ -34,6 +36,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
 
   const [isLogedIn, setIsLogedIn] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false)
 
   const [reloadMWBStore, setReloadMWBStore] = useState(true);
   const [milkyWayBodies, setMilkyWayBodies] = useState({
@@ -47,10 +50,31 @@ export default function ExplorePage() {
   })
 
 
-  const toggleBookmark = (id) => setBookmarks((prev) => (
-    // send the bookmark to the backend
-    { ...prev, [id]: !prev[id] })
-  );
+  const toggleBookmark = async (id) => {
+    if (!AuthenticationService.isAuthenticated()) {
+      setModal({ type: "login", data: null });
+      return;
+    }
+
+    const isCurrentlySaved = bookmarks[id];
+
+    try {
+      if (isCurrentlySaved) {
+        await BookmarkService.removeBookmark(id);
+      } else {
+        await BookmarkService.addBookmark(id);
+      }
+
+      // update UI after success
+      setBookmarks(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }));
+
+    } catch (err) {
+      console.error("Bookmark failed", err);
+    }
+  };
 
   const handleManualSubmit = (lat, long, elev) => {
     setManualLocation(lat, long, elev);
@@ -60,7 +84,32 @@ export default function ExplorePage() {
   };
 
   const handleLogin = () => {
-    console.log("Login was pressed")
+    //console.log("Login was pressed")
+    setModal({type: "login", data:null})
+  }
+
+  const handleAccountSymbol = () => {
+    navigate("/account")
+  }
+
+  const TryLogin = async () => {
+    setLoginFailed(false);
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await AuthenticationService.Login(email, password);
+
+      if (res) {
+        setIsLogedIn(true);
+        setModal({ type: null, data: null });
+      } else {
+        
+      }
+    } catch (err) {
+      console.error("Login failed", err);
+      setLoginFailed(true);
+    }
   }
 
   const setEventIcon = (type_id) => {
@@ -225,10 +274,16 @@ export default function ExplorePage() {
 
   useEffect(()=>{
     console.log("Initial init effect")
-    if (AuthenticationService.isAuthenticated()) {
-      console.log("Authenticated user")
-      setIsLogedIn(true);
+    const checkAuthenticated = async () =>{
+      if (AuthenticationService.isAuthenticated()) {
+        console.log("Authenticated user");
+        setIsLogedIn(true);
+      }
     }
+
+    checkAuthenticated();
+
+
   }, [])
 
   return (
@@ -242,7 +297,7 @@ export default function ExplorePage() {
           <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
         </div>
         <div className="d-flex align-items-center gap-3">
-          <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
+          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
           
           {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
@@ -421,6 +476,34 @@ export default function ExplorePage() {
                   >
                     Cancel | Close
                   </button>
+                </div>
+              </>
+            )}
+
+            {/* LOGIN MODAL */}
+            {modal.type === "login" && (
+              <>
+                <h2>Login</h2>
+
+                {loginFailed && (<p className="fw-bold text-danger">Login Failed!</p>)}
+
+                <input id="email" placeholder="email" className="form-control mb-2" />
+                <input id="password" type="password" placeholder="Password" className="form-control mb-2" />
+
+                <div className="d-flex gap-2 mt-3">
+                <button
+                  className="btn-warp"
+                  onClick={async () => TryLogin()}
+                >
+                  Login
+                </button>
+
+                <button
+                  className="btn-warp"
+                  onClick={() => setModal({ type: null, data: null })}
+                >
+                  Cancel
+                </button>
                 </div>
               </>
             )}
