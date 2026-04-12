@@ -16,7 +16,7 @@ const BookmarkService = {
         if (!AuthenticationService.isAuthenticated()) return;
 
         const userID = AuthenticationService.getUserID();
-        console.log(userID);
+        console.log(userID, objectAPIIdentifier);
 
         try {
             const response = await axios.post(BOOKMARK_BACKEND_URL, {
