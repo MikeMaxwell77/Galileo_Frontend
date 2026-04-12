@@ -35,10 +35,17 @@ export default function ExplorePage() {
 
   const [isLogedIn, setIsLogedIn] = useState(false);
 
+  const [reloadMWBStore, setReloadMWBStore] = useState(true);
+  const [milkyWayBodies, setMilkyWayBodies] = useState({
+    names: null,
+    data: null
+  })
+
   const [modal, setModal] = useState({
     type: null,
     data: null
   })
+
 
   const toggleBookmark = (id) => setBookmarks((prev) => (
     // send the bookmark to the backend
@@ -51,6 +58,10 @@ export default function ExplorePage() {
     //setGeoAPIDenied(false); // user recovered
 
   };
+
+  const handleLogin = () => {
+    console.log("Login was pressed")
+  }
 
   const setEventIcon = (type_id) => {
     switch (type_id){
@@ -99,6 +110,40 @@ export default function ExplorePage() {
     }
   }
 
+  const preprocessRow = (row) => {
+    const latest = row.cells[0]; // or pick latest properly later
+
+    return {
+      entry: row.entry,
+      latest: latest,
+      date: latest.date,
+      position: latest.position,
+      extraInfo: latest.extraInfo
+    };
+  };
+
+  const mapAstronomyBoidesResToEventObj = (obj) => {
+    return {
+      id: obj.entry.id,
+      title: obj.entry.name,
+
+      desc: `${obj.latest.position.constellation.name}`,
+
+      icon: "public", // you can improve this later
+      iconColor: "var(--clr-primary)",
+      glowColor: "rgba(224,142,254,0.05)",
+
+      scanned: obj.date,
+
+      equatorial_pos: obj.position.equatorial,
+      // useful extra data
+      position: obj.position,
+      magnitude: obj.extraInfo?.magnitude
+    };
+  }
+
+  const normalizeString = (str) => str.toLowerCase().trim();
+
   useEffect(() => {
     if (!query) return;
     setLoading(true);
@@ -115,8 +160,17 @@ export default function ExplorePage() {
         // Should also check against the ones in the bodies api and return them if its a match
 
         const mapped = response.data.map(mapAstronomySearchResToEventObj);
-        setEvents(mapped);
-        console.log(mapped);
+        let milkyMatches = [];
+        if (milkyWayBodies.data) {
+          milkyMatches = milkyWayBodies.data.filter(
+            body => normalizeString(body.title).includes(normalizeString(query))
+          );
+        }
+
+        const combined = [...mapped, ...milkyMatches]
+
+        setEvents(combined);
+        //console.log(combined);
       } catch (error) {
         console.error("Search for object api request failed:", error);
       } finally {
@@ -127,6 +181,55 @@ export default function ExplorePage() {
     searchForObjects();
 
   }, [query])
+
+  useEffect(() => {
+    // Will only be possible if the user has their location shared
+    if (!hasGeoData) return;
+
+    const fetchBodies = async () => {
+      let bodyNames = [];
+      let bodyPositionEvents = null;
+
+      // Fetch names
+      try {
+        const res = await AstronomyBodiesInterface.FetchNamedBodies();
+        bodyNames = res.data.bodies;
+      } catch (err) {
+        console.error("Failed to fetch body names", err);
+      }
+
+      // Fetch positions
+      try {
+        const res = await AstronomyBodiesInterface.FetchAllBodyPositionsWFN({
+          latitude: geoData.latitude,
+          longitude: geoData.longitude,
+          elevation: geoData.elevation
+        });
+
+        bodyPositionEvents = res.data.table.rows.map(preprocessRow).map(mapAstronomyBoidesResToEventObj);
+      } catch (err) {
+        console.error("Failed to fetch body positions", err);
+      }
+
+      //console.log(bodyNames);
+      //console.log(bodyPositionEvents);
+      setMilkyWayBodies({
+          names: bodyNames,
+          data: bodyPositionEvents
+        });
+    }
+
+    fetchBodies()
+
+  }, [hasGeoData, reloadMWBStore])
+
+  useEffect(()=>{
+    console.log("Initial init effect")
+    if (AuthenticationService.isAuthenticated()) {
+      console.log("Authenticated user")
+      setIsLogedIn(true);
+    }
+  }, [])
 
   return (
     <div className="page-root">
@@ -140,7 +243,8 @@ export default function ExplorePage() {
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm">Login</button>
+          
+          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
       </nav>
 

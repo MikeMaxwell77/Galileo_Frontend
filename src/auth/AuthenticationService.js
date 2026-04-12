@@ -37,36 +37,36 @@ const AuthenticationService = {
     },
 
     getAuthHeader: () => {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("AuthToken");
         return token ? { Authorization: `Bearer ${token}` } : {};
     },
 
     
     getToken: () => {
-        return localStorage.getItem("token");
+        return localStorage.getItem("AuthToken");
     },
 
     
     clearToken: () => {
-        localStorage.removeItem("token");
+        localStorage.removeItem("AuthToken");
     },
 
     // ✅ Check if a token exists and is valid
     isAuthenticated: () => {
-    const token = localStorage.getItem("token");
+        const token = localStorage.getItem("AuthToken");
     if (!token || token.split(".").length !== 3) return false;
 
     try {
       const payload = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
       const expiryTime = payload.exp * 1000;
       if (Date.now() >= expiryTime) {
-        AuthService.logout();
+          AuthenticationService.Logout();
         return false;
       }
       return true;
     } catch (error) {
       console.error("Invalid token:", error);
-      AuthService.logout();
+      AuthenticationService.Logout();
       return false;
     }
   },
