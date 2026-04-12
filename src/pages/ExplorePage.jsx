@@ -3,8 +3,10 @@ import "./ExplorePage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
 import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
+import AuthenticationService from "../auth/AuthenticationService";
 
 import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
+
 
 
 const SIGNALS = [
@@ -30,6 +32,8 @@ export default function ExplorePage() {
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [isLogedIn, setIsLogedIn] = useState(false);
 
   const [modal, setModal] = useState({
     type: null,
@@ -108,6 +112,8 @@ export default function ExplorePage() {
           }
         )
 
+        // Should also check against the ones in the bodies api and return them if its a match
+
         const mapped = response.data.map(mapAstronomySearchResToEventObj);
         setEvents(mapped);
         console.log(mapped);
@@ -185,14 +191,14 @@ export default function ExplorePage() {
             <div className="col-12 col-md-4">
               <button className="share-btn" onClick={() => setModal({ type: "location", data: null })}>
                 <span className="material-symbols-outlined">share_location</span>
-                <span className="font-headline fw-bold">SHARE LOCATION</span>
+                <span className="font-headline fw-bold">{hasGeoData ? "VIEW" : "SHARE"} LOCATION</span>
               </button>
             </div>
           </div>
 
           <div className="d-flex justify-content-between align-items-baseline mb-4">
             <h2 className="font-headline fw-bold section-heading">Recent Signals</h2>
-            <span className="results-count">3,241 bookmarks found</span>
+            <span className="results-count">{events.length} objects found</span>
           </div>
 
           <div className="row g-4">
@@ -208,12 +214,6 @@ export default function ExplorePage() {
             ))}
           </div>
 
-          <div className="d-flex justify-content-center mt-5 pb-5">
-            <button className="load-more-btn">
-              SCAN FOR MORE SIGNALS
-              <span className="material-symbols-outlined">expand_more</span>
-            </button>
-          </div>
         </div>
       </main>
 
@@ -224,6 +224,7 @@ export default function ExplorePage() {
         <button className="mobile-nav-btn"><span className="material-symbols-outlined">bookmarks</span></button>
       </div>
 
+      {/* MODAL - the popup if something is interacted with*/}
       {modal.type && (
         <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
 
@@ -242,6 +243,11 @@ export default function ExplorePage() {
                 </div>
 
                 <p><strong>Scanned:</strong> {modal.data.scanned}</p>
+                <div>
+                  <h4><strong>Equatorial Position Data</strong></h4>
+                  <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
+                  <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
+                </div>
               </>
             )}
 
@@ -249,9 +255,9 @@ export default function ExplorePage() {
             {modal.type === "location" && (
               <>
                 <h2>Share Location</h2>
-                <p>Enter your location manually or enable browser access.</p>
+                <p>Enter your location manually or enable browser location access.</p>
               
-                {!hasGeoData && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
+                {(!hasGeoData && !geoAPIDenied) && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
 
                 {!hasGeoData && geoAPIDenied && (
                   <div>
@@ -259,7 +265,7 @@ export default function ExplorePage() {
                     <input id="long" placeholder="Longitude" type="number" />
                     <input id="elev" placeholder="Elevation" type="number" />
 
-                    <button
+                    <button className="btn-warp"
                       onClick={() =>
                         handleManualSubmit(
                           document.getElementById("lat").value,
@@ -297,12 +303,11 @@ export default function ExplorePage() {
                 </div>
 
                 <div className="d-flex gap-2 mt-3">
-                  <button className="btn-warp">Submit</button>
                   <button
-                    className="btn-secondary"
+                    className="btn-warp"
                     onClick={() => setModal({ type: null, data: null })}
                   >
-                    Cancel
+                    Cancel | Close
                   </button>
                 </div>
               </>
