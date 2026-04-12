@@ -248,6 +248,15 @@ export default function ExplorePage() {
                   <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
                   <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
                 </div>
+
+                <div className="d-flex gap-2 mt-3">
+                  <button
+                    className="btn-warp"
+                    onClick={() => setModal({ type: null, data: null })}
+                  >
+                    Cancel | Close
+                  </button>
+                </div>
               </>
             )}
 
@@ -285,7 +294,6 @@ export default function ExplorePage() {
                   ) : (
 
                     <h3>Manual GeoLocation data</h3>
-
                   )
                   }
                 </div>
