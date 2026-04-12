@@ -17,7 +17,9 @@ import ExplorePage  from "./pages/ExplorePage";
 import CalendarPage from "./pages/CalendarPage";
 import AccountPage  from "./pages/AccountPage";
 import LoginPage    from "./pages/LoginPage";
-import ExplorePageEvent from './components/DataViews/ExplorePageEvent'
+import BookmarksDebug from './pages/testing/bookmarkTest'
+
+
 
 
 
@@ -39,6 +41,8 @@ function App() {
           <Route path="/debug/home"    element={<Home />} />
           <Route path="/debug/explore" element={<ExplorePageDebug />} />
           <Route path="/loginTest"     element={<LoginTesting />} />
+          <Route path="/bookmarkTest" element={<BookmarksDebug/>} />
+          
           
 
           {/* PRIVILEGED ROUTES */}
