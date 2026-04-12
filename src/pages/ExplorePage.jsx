@@ -1,4 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import "./ExplorePage.css";
+
+import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
+import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
+import AuthenticationService from "../auth/AuthenticationService";
+
+import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
+
+
 
 const SIGNALS = [
   { id: 1, icon: "rocket_launch", iconColor: "var(--clr-primary)", glowColor: "rgba(224,142,254,0.05)", title: "Stellar Documentation", desc: "A curated repository of technical specifications for warp drive maintenance and navigation.", tags: [{ label: "Archive", color: "var(--clr-secondary)", border: "rgba(186,146,250,0.2)" }, { label: "Active", color: "var(--clr-tertiary)", border: "rgba(255,231,146,0.2)" }], scanned: "0.4s ago", saved: true },
@@ -16,10 +25,211 @@ const NAV_ITEMS = [
 ];
 
 export default function ExplorePage() {
+  const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
+
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
 
-  const toggleBookmark = (id) => setBookmarks((prev) => ({ ...prev, [id]: !prev[id] }));
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [isLogedIn, setIsLogedIn] = useState(false);
+
+  const [reloadMWBStore, setReloadMWBStore] = useState(true);
+  const [milkyWayBodies, setMilkyWayBodies] = useState({
+    names: null,
+    data: null
+  })
+
+  const [modal, setModal] = useState({
+    type: null,
+    data: null
+  })
+
+
+  const toggleBookmark = (id) => setBookmarks((prev) => (
+    // send the bookmark to the backend
+    { ...prev, [id]: !prev[id] })
+  );
+
+  const handleManualSubmit = (lat, long, elev) => {
+    setManualLocation(lat, long, elev);
+
+    //setGeoAPIDenied(false); // user recovered
+
+  };
+
+  const handleLogin = () => {
+    console.log("Login was pressed")
+  }
+
+  const setEventIcon = (type_id) => {
+    switch (type_id){
+      //https://icons.getbootstrap.com/ 
+      default:
+        return "Star"
+      case "STRss":
+        return "Star"
+      case "SNRss":
+        //"Super Nova Remnant";
+        return "Starburst";
+      case "Gss":
+        //"Galaxy"
+        return "Sparkly"
+    }
+  }
+
+  const mapAstronomySearchResToEventObj = (obj) => {
+    return {
+      id: obj.id,
+      title: obj.name,
+      desc: `${obj.type.name} in ${obj.position.constellation.name}`,
+      icon: setEventIcon(obj.type.id) ,
+
+      equatorial_pos: obj.position.equatorial,
+      crossIdentification: obj.crossIdentification,
+
+      iconColor: "var(--clr-primary)",
+      glowColor: "rgba(224,142,254,0.05)",
+      tags: [
+        {
+          label: obj.type.name,
+          color: "var(--clr-secondary)",
+          border: "rgba(186,146,250,0.2)"
+        },
+        ...(obj.subType?.name
+          ? [{
+            label: obj.subType.name,
+            color: "var(--clr-tertiary)",
+            border: "rgba(255,231,146,0.2)"
+          }]
+          : [])
+      ],
+      scanned: obj.position.equatorial.rightAscension.string
+
+    }
+  }
+
+  const preprocessRow = (row) => {
+    const latest = row.cells[0]; // or pick latest properly later
+
+    return {
+      entry: row.entry,
+      latest: latest,
+      date: latest.date,
+      position: latest.position,
+      extraInfo: latest.extraInfo
+    };
+  };
+
+  const mapAstronomyBoidesResToEventObj = (obj) => {
+    return {
+      id: obj.entry.id,
+      title: obj.entry.name,
+
+      desc: `${obj.latest.position.constellation.name}`,
+
+      icon: "public", // you can improve this later
+      iconColor: "var(--clr-primary)",
+      glowColor: "rgba(224,142,254,0.05)",
+
+      scanned: obj.date,
+
+      equatorial_pos: obj.position.equatorial,
+      // useful extra data
+      position: obj.position,
+      magnitude: obj.extraInfo?.magnitude
+    };
+  }
+
+  const normalizeString = (str) => str.toLowerCase().trim();
+
+  useEffect(() => {
+    if (!query) return;
+    setLoading(true);
+
+    const searchForObjects = async () => {
+      try {
+        const response = await AstronomySearchInterface.FetchObjectsByName(
+          {
+            objectSearchTerm: query.toString(),
+            exact: false
+          }
+        )
+
+        // Should also check against the ones in the bodies api and return them if its a match
+
+        const mapped = response.data.map(mapAstronomySearchResToEventObj);
+        let milkyMatches = [];
+        if (milkyWayBodies.data) {
+          milkyMatches = milkyWayBodies.data.filter(
+            body => normalizeString(body.title).includes(normalizeString(query))
+          );
+        }
+
+        const combined = [...mapped, ...milkyMatches]
+
+        setEvents(combined);
+        //console.log(combined);
+      } catch (error) {
+        console.error("Search for object api request failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    searchForObjects();
+
+  }, [query])
+
+  useEffect(() => {
+    // Will only be possible if the user has their location shared
+    if (!hasGeoData) return;
+
+    const fetchBodies = async () => {
+      let bodyNames = [];
+      let bodyPositionEvents = null;
+
+      // Fetch names
+      try {
+        const res = await AstronomyBodiesInterface.FetchNamedBodies();
+        bodyNames = res.data.bodies;
+      } catch (err) {
+        console.error("Failed to fetch body names", err);
+      }
+
+      // Fetch positions
+      try {
+        const res = await AstronomyBodiesInterface.FetchAllBodyPositionsWFN({
+          latitude: geoData.latitude,
+          longitude: geoData.longitude,
+          elevation: geoData.elevation
+        });
+
+        bodyPositionEvents = res.data.table.rows.map(preprocessRow).map(mapAstronomyBoidesResToEventObj);
+      } catch (err) {
+        console.error("Failed to fetch body positions", err);
+      }
+
+      //console.log(bodyNames);
+      //console.log(bodyPositionEvents);
+      setMilkyWayBodies({
+          names: bodyNames,
+          data: bodyPositionEvents
+        });
+    }
+
+    fetchBodies()
+
+  }, [hasGeoData, reloadMWBStore])
+
+  useEffect(()=>{
+    console.log("Initial init effect")
+    if (AuthenticationService.isAuthenticated()) {
+      console.log("Authenticated user")
+      setIsLogedIn(true);
+    }
+  }, [])
 
   return (
     <div className="page-root">
@@ -33,7 +243,8 @@ export default function ExplorePage() {
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm">Login</button>
+          
+          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
       </nav>
 
@@ -77,60 +288,36 @@ export default function ExplorePage() {
                 <div className="search-box">
                   <span className="material-symbols-outlined search-icon">search</span>
                   <input className="search-input" type="text" placeholder="Search the nebula for websites, tags, or users..." value={query} onChange={(e) => setQuery(e.target.value)} />
-                  <button className="btn-scan">SCAN</button>
+                  <button className="btn-scan" onClick={() => setQuery(query)}>SCAN</button>
                 </div>
               </div>
             </div>
             <div className="col-12 col-md-4">
-              <button className="share-btn">
+              <button className="share-btn" onClick={() => setModal({ type: "location", data: null })}>
                 <span className="material-symbols-outlined">share_location</span>
-                <span className="font-headline fw-bold">SHARE LOCATION</span>
+                <span className="font-headline fw-bold">{hasGeoData ? "VIEW" : "SHARE"} LOCATION</span>
               </button>
             </div>
           </div>
 
           <div className="d-flex justify-content-between align-items-baseline mb-4">
             <h2 className="font-headline fw-bold section-heading">Recent Signals</h2>
-            <span className="results-count">3,241 bookmarks found</span>
+            <span className="results-count">{events.length} objects found</span>
           </div>
 
           <div className="row g-4">
-            {SIGNALS.map((sig) => (
+            {events.length > 0 && events.map((sig) => (
               <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
-                <div className="signal-card h-100">
-                  <div className="card-glow" style={{ background: sig.glowColor }} />
-                  <div className="d-flex justify-content-between align-items-start mb-4">
-                    <div className="card-icon-wrap">
-                      <span className="material-symbols-outlined" style={{ color: sig.iconColor }}>{sig.icon}</span>
-                    </div>
-                    <button className={`bookmark-btn ${bookmarks[sig.id] ? "saved" : ""}`} onClick={() => toggleBookmark(sig.id)}>
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: bookmarks[sig.id] ? "'FILL' 1" : "'FILL' 0" }}>bookmark</span>
-                    </button>
-                  </div>
-                  <h3 className="font-headline fw-bold card-title">{sig.title}</h3>
-                  <p className="card-desc">{sig.desc}</p>
-                  {sig.tags.length > 0 && (
-                    <div className="d-flex gap-2 mb-3">
-                      {sig.tags.map((tag) => (
-                        <span key={tag.label} className="tag-chip" style={{ color: tag.color, border: `1px solid ${tag.border}` }}>{tag.label}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="d-flex justify-content-between align-items-center card-footer-row">
-                    <span className="scan-time">Last Scanned: {sig.scanned}</span>
-                    <a href="#" className="open-signal-link">OPEN SIGNAL <span className="material-symbols-outlined">arrow_forward</span></a>
-                  </div>
-                </div>
+                <ExplorePageEvent
+                  data={sig}
+                  isSaved={bookmarks[sig.id]}
+                  onToggleBookmark={toggleBookmark}
+                  onOpen={()=> setModal({type:"event", data:sig})}
+                />
               </div>
             ))}
           </div>
 
-          <div className="d-flex justify-content-center mt-5 pb-5">
-            <button className="load-more-btn">
-              SCAN FOR MORE SIGNALS
-              <span className="material-symbols-outlined">expand_more</span>
-            </button>
-          </div>
         </div>
       </main>
 
@@ -140,6 +327,107 @@ export default function ExplorePage() {
         <button className="mobile-nav-btn"><span className="material-symbols-outlined">calendar_month</span></button>
         <button className="mobile-nav-btn"><span className="material-symbols-outlined">bookmarks</span></button>
       </div>
+
+      {/* MODAL - the popup if something is interacted with*/}
+      {modal.type && (
+        <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
+
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+
+            {/* EVENT MODAL */}
+            {modal.type === "event" && (
+              <>
+                <h2>{modal.data.title}</h2>
+                <p>{modal.data.desc}</p>
+
+                <div className="d-flex gap-2 mb-3">
+                  {modal.data.tags?.map(tag => (
+                    <span key={tag.label}>{tag.label}</span>
+                  ))}
+                </div>
+
+                <p><strong>Scanned:</strong> {modal.data.scanned}</p>
+                <div>
+                  <h4><strong>Equatorial Position Data</strong></h4>
+                  <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
+                  <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
+                </div>
+
+                <div className="d-flex gap-2 mt-3">
+                  <button
+                    className="btn-warp"
+                    onClick={() => setModal({ type: null, data: null })}
+                  >
+                    Cancel | Close
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* LOCATION MODAL */}
+            {modal.type === "location" && (
+              <>
+                <h2>Share Location</h2>
+                <p>Enter your location manually or enable browser location access.</p>
+              
+                {(!hasGeoData && !geoAPIDenied) && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
+
+                {!hasGeoData && geoAPIDenied && (
+                  <div>
+                    <input id="lat" placeholder="Latitude" type="number" />
+                    <input id="long" placeholder="Longitude" type="number" />
+                    <input id="elev" placeholder="Elevation" type="number" />
+
+                    <button className="btn-warp"
+                      onClick={() =>
+                        handleManualSubmit(
+                          document.getElementById("lat").value,
+                          document.getElementById("long").value,
+                          document.getElementById("elev").value
+                        )
+                      }
+                    >
+                      Submit
+                    </button>
+                  </div>
+                )}
+
+                < div className="container mt-4">
+                  {!geoAPIDenied ? (
+                    <h3>Automatic GeoLocation data</h3>
+                  ) : (
+
+                    <h3>Manual GeoLocation data</h3>
+                  )
+                  }
+                </div>
+
+                <div className="container mt-4">
+                  {hasGeoData && (
+                    <div>
+                      <h3>Current GeoLocation Data:</h3>
+                      <p>Latitude: {geoData.latitude}</p>
+                      <p>Longitude: {geoData.longitude}</p>
+                      <p>Elevation: {geoData.elevation}</p>
+                      <p>Timestamp: {geoData.createdAt.toString()}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="d-flex gap-2 mt-3">
+                  <button
+                    className="btn-warp"
+                    onClick={() => setModal({ type: null, data: null })}
+                  >
+                    Cancel | Close
+                  </button>
+                </div>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

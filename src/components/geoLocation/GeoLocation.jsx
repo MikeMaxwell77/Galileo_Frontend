@@ -53,7 +53,7 @@ export function useGeoLocation() {
                     setHasGeoData(true);
                     setGeoAPIDenied(false);
 
-                    resolve(data); // 🔥 KEY
+                    resolve(data); 
                 },
                 (error) => {
                     if (error.code === error.PERMISSION_DENIED) {

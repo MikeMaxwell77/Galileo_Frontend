@@ -7,10 +7,7 @@ export default function GeoLocationTestPage() {
 
     const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
 
-    const handleClick = async () => {
-        const geo = await getLocation();
-        console.log(geo);
-    };
+    
 
     const handleManualSubmit = (lat, long, elev) => {
         setManualLocation(lat, long, elev);
