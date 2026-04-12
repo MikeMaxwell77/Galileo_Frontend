@@ -17,3 +17,14 @@
     width: 400px;
     max-width: 90%;
 }
+
+.top-nav {
+    position: relative;
+    pointer-events: auto;
+    z-index: 1000;
+
+}
+
+.page-main{
+    margin-top: 80px;
+}

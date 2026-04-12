@@ -34,6 +34,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
 
   const [isLogedIn, setIsLogedIn] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false)
 
   const [reloadMWBStore, setReloadMWBStore] = useState(true);
   const [milkyWayBodies, setMilkyWayBodies] = useState({
@@ -60,7 +61,28 @@ export default function ExplorePage() {
   };
 
   const handleLogin = () => {
-    console.log("Login was pressed")
+    //console.log("Login was pressed")
+    setModal({type: "login", data:null})
+  }
+
+  const TryLogin = async () => {
+    setLoginFailed(false);
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await AuthenticationService.Login(username, password);
+
+      if (res) {
+        setIsLogedIn(true);
+        setModal({ type: null, data: null });
+      } else {
+        
+      }
+    } catch (err) {
+      console.error("Login failed", err);
+      setLoginFailed(true);
+    }
   }
 
   const setEventIcon = (type_id) => {
@@ -225,10 +247,16 @@ export default function ExplorePage() {
 
   useEffect(()=>{
     console.log("Initial init effect")
-    if (AuthenticationService.isAuthenticated()) {
-      console.log("Authenticated user")
-      setIsLogedIn(true);
+    const checkAuthenticated = async () =>{
+      if (AuthenticationService.isAuthenticated()) {
+        console.log("Authenticated user");
+        setIsLogedIn(true);
+      }
     }
+
+    checkAuthenticated();
+
+
   }, [])
 
   return (
@@ -421,6 +449,34 @@ export default function ExplorePage() {
                   >
                     Cancel | Close
                   </button>
+                </div>
+              </>
+            )}
+
+            {/* LOGIN MODAL */}
+            {modal.type === "login" && (
+              <>
+                <h2>Login</h2>
+
+                {loginFailed && (<p className="fw-bold text-danger">Login Failed!</p>)}
+
+                <input id="username" placeholder="Username" className="form-control mb-2" />
+                <input id="password" type="password" placeholder="Password" className="form-control mb-2" />
+
+                <div className="d-flex gap-2 mt-3">
+                <button
+                  className="btn-warp"
+                  onClick={async () => TryLogin()}
+                >
+                  Login
+                </button>
+
+                <button
+                  className="btn-warp"
+                  onClick={() => setModal({ type: null, data: null })}
+                >
+                  Cancel
+                </button>
                 </div>
               </>
             )}
