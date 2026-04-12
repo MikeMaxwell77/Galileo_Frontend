@@ -14,7 +14,7 @@ export default function LoginPage() {
       <div className="glow-orb-left" />
       <div className="glow-orb-right" />
 
-      <header className="position-fixed top-0 w-100 d-flex justify-content-between align-items-center px-4 py-4" style={{ zIndex: 50 }}>
+      <header className="position-fixed top-0 w-100 d-flex justify-content-between align-items-center px-4 py-4" style={{ zIndex: -2 }}>
         <div className="font-headline fw-bold fs-4 galileo-logo">Galileo</div>
       </header>
 
@@ -45,7 +45,7 @@ export default function LoginPage() {
                   {activeTab === "login" ? "Welcome Back, Voyager" : "Begin Your Journey"}
                 </h2>
                 <p className="form-subtext">
-                  {activeTab === "login" ? "Enter your credentials to access the bridge." : "Create your account to join the observatory."}
+                  {activeTab === "register" ? "Enter your credentials to access the bridge." : "Create your account to join the observatory."}
                 </p>
               </div>
 
