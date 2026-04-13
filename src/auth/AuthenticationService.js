@@ -66,8 +66,15 @@ const AuthenticationService = {
     getToken: () => {
         return localStorage.getItem("AuthToken");
     },
+    getUserID: () => {
+        if (!AuthenticationService.isAuthenticated()) return -1;
+        
+        const token = localStorage.getItem("AuthToken");
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const userId = payload.id;
 
-    
+        return userId;
+    },
     clearToken: () => {
         localStorage.removeItem("AuthToken");
     },
