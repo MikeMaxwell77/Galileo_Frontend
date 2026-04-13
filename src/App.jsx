@@ -17,6 +17,7 @@ import ExplorePage  from "./pages/ExplorePage";
 import CalendarPage from "./pages/CalendarPage";
 import AccountPage  from "./pages/AccountPage";
 import LoginPage    from "./pages/LoginPage";
+import BookmarksPage from "./pages/BookmarkPage";
 import BookmarksDebug from './pages/testing/bookmarkTest'
 
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/explore"  element={<ExplorePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/account"  element={<AccountPage />} />
+          <Route path="/bookmarks" element={<BookmarksPage />} />
 
           {/* DEBUG ROUTES */}
           <Route path="/debug/home"    element={<Home />} />
