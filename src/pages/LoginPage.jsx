@@ -1,13 +1,53 @@
 import { useState } from "react";
+import axios from "axios";
+import AuthenticationService from "../auth/AuthenticationService";
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  // data for jason
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: wire up to AuthenticationService.js
+    setMessage("");
+    setLoading(true);
+
+    try {
+      if (activeTab === "login") {
+        // Login
+        const response = await axios.post(`${AuthenticationService.AUTH_BACKEND_URL}/login`, {
+          email,
+          password,
+          });
+
+        const token = response.data; // we get a token from the backend
+        if (!token || token.split(".").length !== 3) {
+              throw new Error("Invalid token format");
+        }
+
+        AuthenticationService.Login(token);
+        setMessage("Login Succesful");
+      }
+      else { // Register
+        await AuthenticationService.Register(email, password);
+        setMessage("Registration Succesful");
+      }
+    } catch (error) {
+      if (activeTab === "login") {
+        setMessage("Login failed. Please check your credentials.");
+      } else {
+        setMessage("Registration failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <div className="bg-nebula" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -21,6 +61,7 @@ export default function LoginPage() {
       <main className="container" style={{ maxWidth: "1100px" }}>
         <div className="row align-items-center g-5">
 
+          {/* Left Column: Hero Text */}
           <div className="col-md-6 d-none d-md-flex flex-column gap-4">
             <span className="font-headline fw-bold section-eyebrow">Celestial Cartography</span>
             <h1 className="font-headline fw-bold hero-heading">
@@ -32,12 +73,23 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Right Column: Glass Form */}
           <div className="col-md-6 d-flex justify-content-center justify-content-lg-end">
             <div className="glass-panel p-4 p-md-5 position-relative" style={{ width: "100%", maxWidth: "440px" }}>
 
               <div className="d-flex gap-4 mb-4 tab-row">
-                <button className={`tab-btn ${activeTab === "login" ? "active" : ""}`} onClick={() => setActiveTab("login")}>Login</button>
-                <button className={`tab-btn ${activeTab === "register" ? "active" : ""}`} onClick={() => setActiveTab("register")}>Register</button>
+                <button 
+                  className={`tab-btn ${activeTab === "login" ? "active" : ""}`} 
+                  onClick={() => { setActiveTab("login"); setMessage(""); }}
+                >
+                  Login
+                </button>
+                <button 
+                  className={`tab-btn ${activeTab === "register" ? "active" : ""}`} 
+                  onClick={() => { setActiveTab("register"); setMessage(""); }}
+                >
+                  Register
+                </button>
               </div>
 
               <div className="mb-4">
@@ -54,7 +106,14 @@ export default function LoginPage() {
                   <label className="field-label d-block">Navigation</label>
                   <div className="position-relative">
                     <span className="material-symbols-outlined input-icon">alternate_email</span>
-                    <input type="email" className="galileo-input form-control" placeholder="voyager@galileo.sys" />
+                    <input 
+                      type="email" 
+                      className="galileo-input form-control" 
+                      placeholder="voyager@galileo.sys"
+                      value={email} // Controlled input
+                      onChange={(e) => setEmail(e.target.value)} 
+                      required 
+                    />
                   </div>
                 </div>
 
@@ -65,16 +124,33 @@ export default function LoginPage() {
                   </div>
                   <div className="position-relative">
                     <span className="material-symbols-outlined input-icon">lock</span>
-                    <input type={showPassword ? "text" : "password"} className="galileo-input form-control" placeholder="••••••••••••" />
-                    <span className="material-symbols-outlined input-icon-right" onClick={() => setShowPassword(!showPassword)}>
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      className="galileo-input form-control" 
+                      placeholder="••••••••••••"
+                      value={password} // Controlled input
+                      onChange={(e) => setPassword(e.target.value)} 
+                      required 
+                    />
+                    <span 
+                      className="material-symbols-outlined input-icon-right" 
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
                       {showPassword ? "visibility_off" : "visibility"}
                     </span>
                   </div>
                 </div>
 
-                <button type="submit" className="btn-warp mt-2 d-flex align-items-center justify-content-center gap-2">
-                  {activeTab === "login" ? "Initiate Warp" : "Launch Sequence"}
-                  <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>rocket_launch</span>
+                {message && (
+                  <p style={{ fontSize: "0.9rem", color: message.includes("✅") ? "#4ade80" : "#f87171" }}>
+                    {message}
+                  </p>
+                )}
+
+                <button type="submit" disabled={loading} className="btn-warp mt-2 d-flex align-items-center justify-content-center gap-2">
+                  {loading ? "Processing..." : (activeTab === "login" ? "Initiate Warp" : "Launch Sequence")}
+                  {!loading && <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>rocket_launch</span>}
                 </button>
               </form>
 
@@ -90,7 +166,7 @@ export default function LoginPage() {
           <a href="#" className="footer-link">Terms of Orbit</a>
           <a href="#" className="footer-link">Support Relay</a>
         </div>
-        <div className="footer-copyright">© 2024 Galileo Interstellar Systems • v4.0.2-Stable</div>
+        <div className="footer-copyright">© 2026 Galileo Interstellar Systems • v4.0.2-Stable</div>
       </footer>
     </div>
   );

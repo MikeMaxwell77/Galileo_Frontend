@@ -13,7 +13,7 @@ we make another funciton that gets the user info from the backend, and then we d
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import AuthenticationService from "../auth/AuthenticationService"; // ✅ Import AuthService
+import AuthenticationService from "../auth/AuthenticationService"; // Import AuthService
 //import { API_BASE_URL } from '../api';
 
 export default function UpdateAccount() {
@@ -21,12 +21,11 @@ export default function UpdateAccount() {
   const { id } = useParams();
 
   const [account, setAccount] = useState({
-    username: "",
     password: "",
     privacy: false,
   });
 
-  const { username, password, privacy } = account;
+  const { password, privacy } = account;
 
   const onInputChange = (e) => {
     setAccount({ ...account, [e.target.name]: e.target.value });
@@ -44,7 +43,7 @@ export default function UpdateAccount() {
     e.preventDefault();
     try {
       await axios.put(`${API_BASE_URL}/account/${id}`, account, {
-        headers: AuthenticationService.getAuthHeader(), // ✅ Include JWT token
+        headers: AuthenticationService.getAuthHeader(), // JWT token
       });
       navigate("/");
     } catch (error) {
@@ -62,7 +61,7 @@ export default function UpdateAccount() {
   const loadAccount = async () => {
     try {
       const result = await axios.get(`${API_BASE_URL}/account/${id}`, {
-        headers: AuthService.getAuthHeader(), // ✅ Include JWT token
+        headers: AuthenticationService.getAuthHeader(), //  JWT token
       });
       setAccount(result.data);
     } catch (error) {
@@ -76,11 +75,6 @@ export default function UpdateAccount() {
         <div className="col-md-6 offset-md-3 border rounded p-4 mt-2 shadow">
           <h2 className="text-center m-4">Edit Account</h2>
           <form onSubmit={onSubmit}>
-            <div className="mb-3">
-              <label htmlFor="Username" className="form-label">Username</label>
-              <input type="text" className="form-control" placeholder="Enter your username"
-                name="username" value={username} onChange={onInputChange} required />
-            </div>
             <div className="mb-3">
               <label htmlFor="Password" className="form-label">Password</label>
               <input type="password" className="form-control" placeholder="Enter your password"

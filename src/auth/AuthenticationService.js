@@ -5,10 +5,9 @@ const AUTH_BACKEND_URL = `${import.meta.env.VITE_GALILEO_BACKEND_API_ROUTE}/auth
 // HEAVILY inspired by the auth service in the demo project
 const AuthenticationService = {
     AUTH_BACKEND_URL,
-    Register : async (username, email, password) => {
+    Register : async (email, password) => {
         try {
             const response = await axios.post(`${AUTH_BACKEND_URL}/register`, {
-                username,
                 email,
                 password,
             });
