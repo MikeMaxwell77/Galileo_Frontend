@@ -127,7 +127,7 @@ export default function BookmarksDebug() {
                                     <input type="text" className="form-control" id="queryUserId" placeholder="Enter User id" />
                                 </div>
 
-                                <button type="button" className="btn btn-primary" onClick={() => handleLoadOtherUserBookmarks(document.getElementById("queryUserId").value)}>CreateBookmark</button>
+                                <button type="button" className="btn btn-primary" onClick={() => handleLoadOtherUserBookmarks(document.getElementById("queryUserId").value)}>Load Other Users Bookmark</button>
                             </form>
 
                             <div>
