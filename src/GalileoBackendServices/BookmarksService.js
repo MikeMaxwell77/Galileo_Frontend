@@ -71,6 +71,23 @@ const BookmarkService = {
             throw error;
         }
 
+    },
+    DeleteBookmarkByID: async (bookmarkID) => {
+        if (!AuthenticationService.isAuthenticated()) return;
+
+        try {
+            const response = await axios.delete(`${BOOKMARK_BACKEND_URL}/${bookmarkID}`, {},
+                {
+                    headers: AuthenticationService.getAuthHeader()
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            console.error("delete user bookmark error:", error.response?.data || error.message);
+            throw error;
+        }
+
     }
 
 

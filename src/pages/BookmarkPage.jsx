@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+import BookmarkService from "../GalileoBackendServices/BookmarksService";
+import AuthenticationService from "../auth/AuthenticationService";
 
 const SIGNALS = [
   { id: 1, icon: "pulse_alert", iconColor: "var(--clr-primary)",   iconBg: "rgba(224,142,254,0.1)", title: "Alpha-Centauri-Prime", type: "Terrestrial Signal",  url: "https://deepspace.observatory/ac-01.dat",          date: "Oct 14, 2142", size: "1.42 PB",   action: "View" },
@@ -17,6 +20,63 @@ const NAV_ITEMS = [
 
 export default function BookmarksPage() {
   const [userSearch, setUserSearch] = useState("");
+
+  const [authenticated, setAuthenticated] = useState(false);
+  
+  const [loadingMyBM, setLoadingMyBM] = useState(true);
+  const [loadingOtherBM, setLoadingOtherBM] = useState(true);
+
+  const [myBookmarks, setMyBookmarks] = useState([]);
+  const [otherBookmarks, setOtherBookmarks] = useState([]);
+
+  const loadMyBookmarks = async () => {
+    setLoadingMyBM(true);
+
+    try {
+      const res = await BookmarkService.GetAuthUserBookmarks();
+      if (res) setMyBookmarks(res);
+      console.log(res)
+    } catch (err) {
+      console.error("Failed to load bookmarks", err);
+    } finally {
+      setLoadingMyBM(false);
+    }
+  };
+
+  const mapBookmarkToSignal = (bm) => {
+    return {
+      title: bm.API_identifier.toUpperCase(),
+      observer_pos: `${bm.longitude} : ${bm.latitude}`,
+      dateStr: new Date(bm.timestamp).toLocaleString(),
+      API: bm.whichAPI
+    }
+  }
+
+  useEffect(()=>{
+    // Init effect
+    setAuthenticated(AuthenticationService.isAuthenticated());
+   
+
+  }, [])
+
+  useEffect(()=>{
+    if (authenticated) {
+      loadMyBookmarks();
+    }
+  }, [authenticated])
+
+
+  const handleDelete = async (id) => {
+    try {
+      await BookmarkService.DeleteBookmarkByID(id);
+
+      // remove from UI immediately
+      setMyBookmarks(prev => prev.filter(bm => bm.id !== id));
+
+    } catch (err) {
+      console.error("Failed to delete bookmark", err);
+    }
+  };
 
   return (
     <div className="page-root">
@@ -93,48 +153,87 @@ export default function BookmarksPage() {
           </div>
 
           {/* Bookmarks table */}
-          <div className="bookmarks-table-wrap">
-            <div className="table-responsive">
-              <table className="bookmarks-table w-100">
-                <thead>
-                  <tr className="bookmarks-thead-row">
-                    <th className="bookmarks-th">Signal Name</th>
-                    <th className="bookmarks-th">Coordinates</th>
-                    <th className="bookmarks-th">Discovery Date</th>
-                    <th className="bookmarks-th">File Size</th>
-                    <th className="bookmarks-th text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SIGNALS.map((sig) => (
-                    <tr key={sig.id} className="bookmarks-row">
-                      <td className="bookmarks-td">
-                        <div className="d-flex align-items-center gap-3">
-                          <div className="bookmarks-row-icon" style={{ background: sig.iconBg, color: sig.iconColor }}>
-                            <span className="material-symbols-outlined">{sig.icon}</span>
-                          </div>
-                          <div>
-                            <div className="font-headline fw-bold" style={{ fontSize: "0.95rem" }}>{sig.title}</div>
-                            <div className="bookmarks-row-type">{sig.type}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="bookmarks-td">
-                        <code className="bookmarks-url">{sig.url}</code>
-                      </td>
-                      <td className="bookmarks-td bookmarks-date">{sig.date}</td>
-                      <td className="bookmarks-td">
-                        <span className="bookmarks-size">{sig.size}</span>
-                      </td>
-                      <td className="bookmarks-td text-end">
-                        <button className="bookmarks-action-btn">{sig.action}</button>
-                      </td>
+          {authenticated &&(
+            <div className="bookmarks-table-wrap">
+              <div className="table-responsive">
+                <h3 className="text-center">My Bookmarks</h3>
+                <table className="bookmarks-table w-100">
+                  <thead>
+                    <tr className="bookmarks-thead-row">
+                      <th className="bookmarks-th">Object Identifier</th>
+                      <th className="bookmarks-th">Observer Pos - long : lat</th>
+                      <th className="bookmarks-th">Bookmark Date</th>
+                      <th className="bookmarks-th">API</th>
+                      <th className="bookmarks-th text-end">Delete bookmark</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {myBookmarks && myBookmarks.map((bm) => {
+                      const sig = mapBookmarkToSignal(bm);
+
+                      return (
+                        <tr key={bm.id} className="bookmarks-row">
+
+                          {/* OBJECT IDENTIFIER */}
+                          <td className="bookmarks-td">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="bookmarks-row-icon"
+                                style={{
+                                  background: "rgba(224,142,254,0.1)",
+                                  color: "var(--clr-primary)"
+                                }}
+                              >
+                                <span className="material-symbols-outlined">star</span>
+                              </div>
+                              <div>
+                                <div className="font-headline fw-bold" style={{ fontSize: "0.95rem" }}>
+                                  {sig.title}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* COORDINATES */}
+                          <td className="bookmarks-td">
+                            <code className="bookmarks-url">
+                              {sig.observer_pos}
+                            </code>
+                          </td>
+
+                          {/* DATE */}
+                          <td className="bookmarks-td bookmarks-date">
+                            {sig.dateStr}
+                          </td>
+
+                          {/* API */}
+                          <td className="bookmarks-td text-end">
+                            {sig.API}
+                          </td>
+                          
+                          <td className="bookmarks-td text-end">
+                            <button
+                              className="btn btn-danger"
+                              onClick={() => handleDelete(bm.id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+
+
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
+
+          {!authenticated && (
+            <h2>Log in to view your and other users's bookmars</h2>
+          )}
+         
 
           {/* Background decor */}
           <div className="bookmarks-decor">
