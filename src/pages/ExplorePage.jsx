@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
 
@@ -31,6 +31,8 @@ export default function ExplorePage() {
 
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
+
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -193,18 +195,24 @@ export default function ExplorePage() {
 
   const normalizeString = (str) => str.toLowerCase().trim();
 
+  const requestIdRef = useRef(0); // to stop overwriting when searching
   useEffect(() => {
     if (!query) return;
-    setLoading(true);
+    if (!events) setLoading(true);
+    
+
+    const currentRequest = ++requestIdRef.current;
 
     const searchForObjects = async () => {
       try {
         const response = await AstronomySearchInterface.FetchObjectsByName(
           {
-            objectSearchTerm: query.toString(),
+            objectSearchTerm: debouncedQuery.toString(),
             exact: false
           }
         )
+
+        if (currentRequest != requestIdRef.current) return;
 
         // Should also check against the ones in the bodies api and return them if its a match
 
@@ -212,7 +220,7 @@ export default function ExplorePage() {
         let milkyMatches = [];
         if (milkyWayBodies.data) {
           milkyMatches = milkyWayBodies.data.filter(
-            body => normalizeString(body.title).includes(normalizeString(query))
+            body => normalizeString(body.title).includes(normalizeString(debouncedQuery))
           );
         }
 
@@ -223,13 +231,16 @@ export default function ExplorePage() {
       } catch (error) {
         console.error("Search for object api request failed:", error);
       } finally {
-        setLoading(false);
+        if(currentRequest == requestIdRef.current) {
+          setLoading(false);
+        }
+        
       }
     }
 
     searchForObjects();
 
-  }, [query])
+  }, [debouncedQuery])
 
   useEffect(() => {
     // Will only be possible if the user has their location shared
@@ -271,6 +282,14 @@ export default function ExplorePage() {
     fetchBodies()
 
   }, [hasGeoData, reloadMWBStore])
+
+  useEffect(()=>{
+    const timeout = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [query])
 
   useEffect(()=>{
     console.log("Initial init effect")

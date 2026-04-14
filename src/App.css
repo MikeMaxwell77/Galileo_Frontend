@@ -68,12 +68,18 @@ body {
   color: var(--clr-on-surface);
 }
 
+
 .page-main {
   min-height: 100vh;
   padding-top: 5rem;
 }
 @media (min-width: 992px) {
   .page-main { margin-left: 256px; }
+}
+
+.bookmarks-page.page-main {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .page-content {

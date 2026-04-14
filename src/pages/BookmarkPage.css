@@ -1,0 +1,18 @@
+.search-dropdown {
+    position: absolute;
+    width: 100%;
+    background: #131315;
+    border: 1px solid rgba(72, 71, 74, 0.2);
+    border-radius: 0.5rem;
+    margin-top: 4px;
+    z-index: 100;
+}
+
+.search-item {
+    padding: 0.75rem;
+    cursor: pointer;
+}
+
+.search-item:hover {
+    background: #1f1f22;
+}

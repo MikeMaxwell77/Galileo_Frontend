@@ -1,4 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+import BookmarkService from "../GalileoBackendServices/BookmarksService";
+import AuthenticationService from "../auth/AuthenticationService";
+
+import { GALILEO_BACKEND_SEARCH_ACCOUNT } from "../GalileoBackendServices/backendPaths"
+
+import "./BookmarkPage.css"
 
 const SIGNALS = [
   { id: 1, icon: "pulse_alert", iconColor: "var(--clr-primary)",   iconBg: "rgba(224,142,254,0.1)", title: "Alpha-Centauri-Prime", type: "Terrestrial Signal",  url: "https://deepspace.observatory/ac-01.dat",          date: "Oct 14, 2142", size: "1.42 PB",   action: "View" },
@@ -16,10 +25,186 @@ const NAV_ITEMS = [
 ];
 
 export default function BookmarksPage() {
+  const navigate = useNavigate();
+
+  const [modal, setModal] = useState({
+    type: null,
+    data: null
+  })
+
   const [userSearch, setUserSearch] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false)
+  
+  const [loadingMyBM, setLoadingMyBM] = useState(true);
+  const [loadingOtherBM, setLoadingOtherBM] = useState(true);
+
+  const [myBookmarks, setMyBookmarks] = useState([]);
+  const [otherBookmarks, setOtherBookmarks] = useState([]);
+
+  const loadMyBookmarks = async () => {
+    setLoadingMyBM(true);
+
+    try {
+      const res = await BookmarkService.GetAuthUserBookmarks();
+      if (res) setMyBookmarks(res);
+      console.log(res)
+    } catch (err) {
+      console.error("Failed to load bookmarks", err);
+    } finally {
+      setLoadingMyBM(false);
+    }
+  };
+
+
+
+  const mapBookmarkToSignal = (bm) => {
+    return {
+      title: bm.API_identifier.toUpperCase(),
+      observer_pos: `${bm.longitude} : ${bm.latitude}`,
+      dateStr: new Date(bm.timestamp).toLocaleString(),
+      API: bm.whichAPI
+    }
+  }
+
+  useEffect(()=>{
+    // Init effect
+    setAuthenticated(AuthenticationService.isAuthenticated());
+   
+
+  }, [])
+
+  useEffect(()=>{
+    if (authenticated) {
+      loadMyBookmarks();
+    }
+  }, [authenticated])
+
+  useEffect(() => {
+
+      if (userSearch.length < 2 || !authenticated) {
+      setUserSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await axios.get(
+          `${GALILEO_BACKEND_SEARCH_ACCOUNT}?email=${userSearch}`, { headers: AuthenticationService.getAuthHeader() }
+        );
+
+        setUserSearchResults(res.data);
+        setShowSearchResults(true);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300); // debounce
+
+    return () => clearTimeout(timeout);
+
+
+  }, [userSearch]);
+
+
+  const handleDelete = async (id) => {
+    try {
+      await BookmarkService.DeleteBookmarkByID(id);
+
+      // remove from UI immediately
+      setMyBookmarks(prev => prev.filter(bm => bm.id !== id));
+
+    } catch (err) {
+      console.error("Failed to delete bookmark", err);
+    }
+  };
+
+  const handleLogin = () => {
+    //console.log("Login was pressed")
+    setModal({ type: "login", data: null })
+  }
+
+  const TryLogin = async () => {
+    setLoginFailed(false);
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await AuthenticationService.Login(email, password);
+
+      if (res) {
+        setAuthenticated(true);
+        setModal({ type: null, data: null });
+      } else {
+
+      }
+    } catch (err) {
+      console.error("Login failed", err);
+      setLoginFailed(true);
+    }
+  }
+
+  const handleAccountSymbol = () => {
+    navigate("/account")
+  }
+
+  const handleUserSelect = async (user) => {
+    setUserSearch(user.email);
+    setShowSearchResults(false);
+
+    try {
+      setLoadingOtherBM(true);
+
+      const res = await BookmarkService.GetBookmarks(user.id);
+      setOtherBookmarks(res);
+    } catch (err) {
+      console.error("Failed to load other bookmarks", err);
+    } finally {
+      setLoadingOtherBM(false);
+    }
+  };
+
+  const handleYank = async (id) => {
+    const bookmark = otherBookmarks.find(bm => bm.id === id)
+    
+    if (!bookmark) return;
+
+    try {
+      await BookmarkService.CreateNewBookmark({
+        objectAPIIdentifier: bookmark.API_identifier,
+        latitude: bookmark.latitude,
+        longitude: bookmark.longitude
+      });
+
+      // optional: refresh your bookmarks
+      loadMyBookmarks();
+
+    } catch (err) {
+      console.error("Failed to yank bookmark", err);
+    }
+
+  }
 
   return (
     <div className="page-root">
+
+      <nav className="top-nav">
+        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
+        <div className="d-none d-md-flex align-items-center gap-4">
+          <a href="/" className="nav-link-item">Home</a>
+          <a href="/explore" className="nav-link-item active">Explore</a>
+          <a href="/calendar" className="nav-link-item">Calendar</a>
+          <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
+        </div>
+        <div className="d-flex align-items-center gap-3">
+          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
+
+          {!authenticated && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
+        </div>
+      </nav>
 
       {/* ── Sidebar ── */}
       <aside className="sidebar d-none d-lg-flex flex-column">
@@ -40,6 +225,7 @@ export default function BookmarksPage() {
           ))}
         </nav>
 
+          {/* FIX-ME should we remove this btn?*/}
         <div className="mt-auto p-4" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
           <button className="btn-warp mb-4" style={{ borderRadius: "0.75rem", fontSize: "0.875rem" }}>
             New Observation
@@ -52,28 +238,17 @@ export default function BookmarksPage() {
       </aside>
 
       {/* ── Main ── */}
-      <main className="page-main">
+      <main className="page-main bookmarks-page">
 
         {/* ── Top Bar ── */}
         <header className="bookmarks-topbar">
           <div className="d-flex align-items-center gap-3">
             <span className="material-symbols-outlined d-lg-none" style={{ color: "var(--clr-primary)", cursor: "pointer" }}>menu</span>
-            <h2 className="font-headline fw-bold" style={{ fontSize: "1.4rem", letterSpacing: "-0.02em" }}>Stored Bookmarks</h2>
+            <h1 className="font-headline fw-bold" style={{ fontSize: "1.4rem", letterSpacing: "-0.02em" }}>Bookmarks</h1>
           </div>
-          <div className="d-flex align-items-center gap-4">
-            <span className="material-symbols-outlined" style={{ color: "var(--clr-outline)", cursor: "pointer", transition: "color 0.2s" }}
-              onMouseEnter={e => e.target.style.color = "var(--clr-primary)"}
-              onMouseLeave={e => e.target.style.color = "var(--clr-outline)"}>
-              search
-            </span>
-            <div className="bookmarks-avatar">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmY9SWBevIIRe5yI4hHo3OcYuKJEOeAhB4Sxvl9F_gYqjFojCys12v5tBjIXg92kgqlaNpVfUEMXaXt3jtRnZVU-97jKw9T2Tl3ww3IQUHncQ0REavv9oJW6AKFHNgPTVcOzTc6UrssLRC6kbwlZa57Czeccz8R_fhY4ycRNK9x-aYD8F58AVEmfLVvfU_A-H5o4iG_cTW7Fr1KTMNzGAbNIrtj9UHGU8veKfST3gYZX7UJBOw6Deb-U6czaCf8-o256G9J6L4SEA"
-                alt="User Profile"
-              />
-            </div>
-          </div>
+          
         </header>
+
 
         {/* ── Content ── */}
         <div className="page-content">
@@ -92,49 +267,189 @@ export default function BookmarksPage() {
             </div>
           </div>
 
-          {/* Bookmarks table */}
-          <div className="bookmarks-table-wrap">
-            <div className="table-responsive">
-              <table className="bookmarks-table w-100">
-                <thead>
-                  <tr className="bookmarks-thead-row">
-                    <th className="bookmarks-th">Signal Name</th>
-                    <th className="bookmarks-th">Coordinates</th>
-                    <th className="bookmarks-th">Discovery Date</th>
-                    <th className="bookmarks-th">File Size</th>
-                    <th className="bookmarks-th text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SIGNALS.map((sig) => (
-                    <tr key={sig.id} className="bookmarks-row">
-                      <td className="bookmarks-td">
-                        <div className="d-flex align-items-center gap-3">
-                          <div className="bookmarks-row-icon" style={{ background: sig.iconBg, color: sig.iconColor }}>
-                            <span className="material-symbols-outlined">{sig.icon}</span>
-                          </div>
-                          <div>
-                            <div className="font-headline fw-bold" style={{ fontSize: "0.95rem" }}>{sig.title}</div>
-                            <div className="bookmarks-row-type">{sig.type}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="bookmarks-td">
-                        <code className="bookmarks-url">{sig.url}</code>
-                      </td>
-                      <td className="bookmarks-td bookmarks-date">{sig.date}</td>
-                      <td className="bookmarks-td">
-                        <span className="bookmarks-size">{sig.size}</span>
-                      </td>
-                      <td className="bookmarks-td text-end">
-                        <button className="bookmarks-action-btn">{sig.action}</button>
-                      </td>
+          {/* No auth display*/}
+          {!authenticated && (
+            <h2>Log in to view your and other users's bookmars</h2>
+          )}
+
+          {/* The users bookmakrs */}
+          {authenticated &&(
+            <div className="bookmarks-table-wrap">
+              <div className="table-responsive">
+                <h3 className="text-center">My Bookmarks</h3>
+                <table className="bookmarks-table w-100">
+                  <thead>
+                    <tr className="bookmarks-thead-row">
+                      <th className="bookmarks-th">Object Identifier</th>
+                      <th className="bookmarks-th">Observer Pos - long : lat</th>
+                      <th className="bookmarks-th">Bookmark Date</th>
+                      <th className="bookmarks-th">API</th>
+                      <th className="bookmarks-th text-end">Delete bookmark</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {myBookmarks && !loadingMyBM && myBookmarks.map((bm) => {
+                      const sig = mapBookmarkToSignal(bm);
+
+                      return (
+                        <tr key={bm.id} className="bookmarks-row">
+
+                          {/* OBJECT IDENTIFIER */}
+                          <td className="bookmarks-td">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="bookmarks-row-icon"
+                                style={{
+                                  background: "rgba(224,142,254,0.1)",
+                                  color: "var(--clr-primary)"
+                                }}
+                              >
+                                <span className="material-symbols-outlined">star</span>
+                              </div>
+                              <div>
+                                <div className="font-headline fw-bold" style={{ fontSize: "0.95rem" }}>
+                                  {sig.title}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* COORDINATES */}
+                          <td className="bookmarks-td">
+                            <code className="bookmarks-url">
+                              {sig.observer_pos}
+                            </code>
+                          </td>
+
+                          {/* DATE */}
+                          <td className="bookmarks-td bookmarks-date">
+                            {sig.dateStr}
+                          </td>
+
+                          {/* API */}
+                          <td className="bookmarks-td text-end">
+                            {sig.API}
+                          </td>
+                          
+                          <td className="bookmarks-td text-end">
+                            <button
+                              className="btn btn-danger"
+                              onClick={() => handleDelete(bm.id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+
+
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
+
+          {authenticated && (
+            <div className="bookmarks-table-wrap mt-5">
+              <div className="table-responsive">
+                <div className="d-flex justify-content-between algin-items-center mb-3">
+                <h3 className="text-center">Search for other users Bookmarks</h3>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search users..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                  />
+                </div>
+                {showSearchResults && userSearchResults.length > 0 && (
+                  <div className="search-dropdown">
+                    {userSearchResults.map((user) => (
+                      <div
+                        key={user.email}
+                        className="search-item"
+                        onClick={() => handleUserSelect(user)}
+                      >
+                        {user.email}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <table className="bookmarks-table w-100">
+                  <thead>
+                    <tr className="bookmarks-thead-row">
+                      <th className="bookmarks-th">Object Identifier</th>
+                      <th className="bookmarks-th">Observer Pos - long : lat</th>
+                      <th className="bookmarks-th">Bookmark Date</th>
+                      <th className="bookmarks-th">API</th>
+                      <th className="bookmarks-th text-end">Delete bookmark</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {otherBookmarks && !loadingOtherBM && otherBookmarks.map((bm) => {
+                      const sig = mapBookmarkToSignal(bm);
+
+                      return (
+                        <tr key={bm.id} className="bookmarks-row">
+
+                          {/* OBJECT IDENTIFIER */}
+                          <td className="bookmarks-td">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="bookmarks-row-icon"
+                                style={{
+                                  background: "rgba(224,142,254,0.1)",
+                                  color: "var(--clr-primary)"
+                                }}
+                              >
+                                <span className="material-symbols-outlined">star</span>
+                              </div>
+                              <div>
+                                <div className="font-headline fw-bold" style={{ fontSize: "0.95rem" }}>
+                                  {sig.title}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* COORDINATES */}
+                          <td className="bookmarks-td">
+                            <code className="bookmarks-url">
+                              {sig.observer_pos}
+                            </code>
+                          </td>
+
+                          {/* DATE */}
+                          <td className="bookmarks-td bookmarks-date">
+                            {sig.dateStr}
+                          </td>
+
+                          {/* API */}
+                          <td className="bookmarks-td text-end">
+                            {sig.API}
+                          </td>
+
+                          <td className="bookmarks-td text-end">
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => handleYank(bm.id)}
+                            >
+                              Yank!
+                            </button>
+                          </td>
+
+
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          
+         
 
           {/* Background decor */}
           <div className="bookmarks-decor">
@@ -143,6 +458,75 @@ export default function BookmarksPage() {
           </div>
 
         </div>
+
+        {/* MODAL - the popup if something is interacted with*/}
+        {modal.type && (
+          <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
+
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+
+              {/* EVENT MODAL -> potential bookmark modal if wanted */}
+              {modal.type === "event" && (
+                <>
+                  <h2>{modal.data.title}</h2>
+                  <p>{modal.data.desc}</p>
+
+                  <div className="d-flex gap-2 mb-3">
+                    {modal.data.tags?.map(tag => (
+                      <span key={tag.label}>{tag.label}</span>
+                    ))}
+                  </div>
+
+                  <p><strong>Scanned:</strong> {modal.data.scanned}</p>
+                  <div>
+                    <h4><strong>Equatorial Position Data</strong></h4>
+                    <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
+                    <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
+                  </div>
+
+                  <div className="d-flex gap-2 mt-3">
+                    <button
+                      className="btn-warp"
+                      onClick={() => setModal({ type: null, data: null })}
+                    >
+                      Cancel | Close
+                    </button>
+                  </div>
+                </>
+              )}
+
+
+              {/* LOGIN MODAL */}
+              {modal.type === "login" && (
+                <>
+                  <h2>Login</h2>
+
+                  {loginFailed && (<p className="fw-bold text-danger">Login Failed!</p>)}
+
+                  <input id="email" placeholder="email" className="form-control mb-2" />
+                  <input id="password" type="password" placeholder="Password" className="form-control mb-2" />
+
+                  <div className="d-flex gap-2 mt-3">
+                    <button
+                      className="btn-warp"
+                      onClick={async () => TryLogin()}
+                    >
+                      Login
+                    </button>
+
+                    <button
+                      className="btn-warp"
+                      onClick={() => setModal({ type: null, data: null })}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
