@@ -26,7 +26,7 @@ export default function ExplorePageEvent({ data, isSaved, onToggleBookmark, onOp
 
                 <button
                     className={`bookmark-btn ${isSaved ? "saved" : ""}`}
-                    onClick={() => onToggleBookmark(data.id)}
+                    onClick={() => onToggleBookmark(data)}
                 >
                     <span
                         className="material-symbols-outlined"

@@ -76,7 +76,7 @@ const BookmarkService = {
         if (!AuthenticationService.isAuthenticated()) return;
 
         try {
-            const response = await axios.delete(`${BOOKMARK_BACKEND_URL}/${bookmarkID}`, {},
+            const response = await axios.delete(`${BOOKMARK_BACKEND_URL}/${bookmarkID}`,
                 {
                     headers: AuthenticationService.getAuthHeader()
                 }

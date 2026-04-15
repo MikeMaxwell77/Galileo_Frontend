@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
 
@@ -7,6 +7,7 @@ import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
 import AuthenticationService from "../auth/AuthenticationService";
 
 import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
+import BookmarkService from "../GalileoBackendServices/BookmarksService";
 
 
 
@@ -38,7 +39,11 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
 
   const [isLogedIn, setIsLogedIn] = useState(false);
-  const [loginFailed, setLoginFailed] = useState(false)
+  const [loginFailed, setLoginFailed] = useState(false);
+  const [myBookmarks, setMyBookmarks] = useState([]);
+  const bookmarkedSet = useMemo(() => {
+    return new Set(myBookmarks.map(bm => bm.API_identifier));
+  }, [myBookmarks]);
 
   const [reloadMWBStore, setReloadMWBStore] = useState(true);
   const [milkyWayBodies, setMilkyWayBodies] = useState({
@@ -52,27 +57,33 @@ export default function ExplorePage() {
   })
 
 
-  const toggleBookmark = async (id) => {
+  const toggleBookmark = async (sig) => {
     if (!AuthenticationService.isAuthenticated()) {
       setModal({ type: "login", data: null });
       return;
     }
 
-    const isCurrentlySaved = bookmarks[id];
+
+    const isCurrentlySaved = bookmarkedSet.has(sig.id);
+    const savedBookmark = myBookmarks.find(
+      bm => bm.API_identifier === sig.id
+    );
+
+    console.log(sig.id)
 
     try {
-      if (isCurrentlySaved) {
-        await BookmarkService.removeBookmark(id);
+      if (isCurrentlySaved && savedBookmark) {
+        await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
       } else {
-        await BookmarkService.addBookmark(id);
+        await BookmarkService.CreateNewBookmark({
+          objectAPIIdentifier: sig.id,
+          latitude: geoData.latitude,
+          longitude: geoData.longitude
+        });
       }
 
-      // update UI after success
-      setBookmarks(prev => ({
-        ...prev,
-        [id]: !prev[id]
-      }));
-
+      
+      await loadBookmarks();
     } catch (err) {
       console.error("Bookmark failed", err);
     }
@@ -93,6 +104,8 @@ export default function ExplorePage() {
   const handleAccountSymbol = () => {
     navigate("/account")
   }
+
+  
 
   const TryLogin = async () => {
     setLoginFailed(false);
@@ -134,8 +147,9 @@ export default function ExplorePage() {
     return {
       id: obj.id,
       title: obj.name,
-      desc: `${obj.type.name} in ${obj.position.constellation.name}`,
+      desc: `${obj.type.name} in ${obj.position.constellation.name ? obj.position.constellation.name : "n/a"}`,
       icon: setEventIcon(obj.type.id) ,
+      searchobj:true,
 
       equatorial_pos: obj.position.equatorial,
       crossIdentification: obj.crossIdentification,
@@ -177,6 +191,7 @@ export default function ExplorePage() {
     return {
       id: obj.entry.id,
       title: obj.entry.name,
+      searchobj: true,
 
       desc: `${obj.latest.position.constellation.name}`,
 
@@ -213,6 +228,7 @@ export default function ExplorePage() {
         )
 
         if (currentRequest != requestIdRef.current) return;
+        if(!currentRequest) return;
 
         // Should also check against the ones in the bodies api and return them if its a match
 
@@ -305,6 +321,26 @@ export default function ExplorePage() {
 
   }, [])
 
+  const loadBookmarks = async () => {
+    try {
+      const res = await BookmarkService.GetAuthUserBookmarks();
+      console.log(res);
+      if (res) setMyBookmarks(res);
+
+    } catch (error) {
+      console.error("Failed to load bookmarks", err);
+    }
+  }
+
+  useEffect(()=>{
+   
+
+    if(isLogedIn){
+      loadBookmarks()
+      console.log(myBookmarks);
+    }
+  }, [isLogedIn])
+
   return (
     <div className="page-root">
       <nav className="top-nav">
@@ -384,7 +420,7 @@ export default function ExplorePage() {
               <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
                 <ExplorePageEvent
                   data={sig}
-                  isSaved={bookmarks[sig.id]}
+                  isSaved={bookmarkedSet.has(sig.id)}
                   onToggleBookmark={toggleBookmark}
                   onOpen={()=> setModal({type:"event", data:sig})}
                 />
@@ -411,14 +447,20 @@ export default function ExplorePage() {
             {/* EVENT MODAL */}
             {modal.type === "event" && (
               <>
-                <h2>{modal.data.title}</h2>
-                <p>{modal.data.desc}</p>
+               <div>
+                  <h1 className="text-center">{modal.data.title}</h1>
+                  <h3 className="text-center">{modal.data.desc}</h3>
+               </div>
+
+               
 
                 <div className="d-flex gap-2 mb-3">
+                  
                   {modal.data.tags?.map(tag => (
                     <span key={tag.label}>{tag.label}</span>
                   ))}
                 </div>
+
 
                 <p><strong>Scanned:</strong> {modal.data.scanned}</p>
                 <div>
