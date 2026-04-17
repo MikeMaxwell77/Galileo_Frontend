@@ -10,6 +10,7 @@ const BookmarkService = {
 
     CreateNewBookmark : async ({  
             objectAPIIdentifier, 
+            displayName,
             latitude, 
             longitude 
     }) => {
@@ -21,6 +22,7 @@ const BookmarkService = {
             const response = await axios.post(BOOKMARK_BACKEND_URL, {
                 accountID: userID,
                 whichAPI: "AstronomyAPI",
+                displayName: displayName,
                 API_identifier: objectAPIIdentifier,
                 timestamp: new Date().getTime(),
                 latitude: latitude,

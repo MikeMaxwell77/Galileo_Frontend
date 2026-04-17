@@ -69,7 +69,7 @@ export default function ExplorePage() {
       bm => bm.API_identifier === sig.id
     );
 
-    console.log(sig.id)
+    console.log(sig)
 
     try {
       if (isCurrentlySaved && savedBookmark) {
@@ -77,6 +77,7 @@ export default function ExplorePage() {
       } else {
         await BookmarkService.CreateNewBookmark({
           objectAPIIdentifier: sig.id,
+          displayName: sig.title,
           latitude: geoData.latitude,
           longitude: geoData.longitude
         });
