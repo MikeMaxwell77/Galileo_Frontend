@@ -63,7 +63,7 @@ export default function BookmarksPage() {
 
   const mapBookmarkToSignal = (bm) => {
     return {
-      title: bm.API_identifier.toUpperCase(),
+      title: bm.displayName.toUpperCase(),
       observer_pos: `${bm.longitude} : ${bm.latitude}`,
       dateStr: new Date(bm.timestamp).toLocaleString(),
       API: bm.whichAPI
@@ -175,6 +175,7 @@ export default function BookmarksPage() {
     try {
       await BookmarkService.CreateNewBookmark({
         objectAPIIdentifier: bookmark.API_identifier,
+        displayName: bookmark.displayName,
         latitude: bookmark.latitude,
         longitude: bookmark.longitude
       });
