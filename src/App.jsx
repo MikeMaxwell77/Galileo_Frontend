@@ -19,6 +19,7 @@ import AccountPage  from "./pages/AccountPage";
 import LoginPage    from "./pages/LoginPage";
 import BookmarksPage from "./pages/BookmarkPage";
 import BookmarksDebug from './pages/testing/bookmarkTest'
+import AccountPageTest from './pages/AccountPageTest';
 
 
 
@@ -44,8 +45,8 @@ function App() {
           <Route path="/debug/explore" element={<ExplorePageDebug />} />
           <Route path="/loginTest"     element={<LoginTesting />} />
           <Route path="/bookmarkTest" element={<BookmarksDebug/>} />
-          
-          
+          <Route path="/accountTest" element={<AccountPageTest/>} />
+          <Route path="/accountLook" element={<Account/>} />
 
           {/* PRIVILEGED ROUTES */}
 

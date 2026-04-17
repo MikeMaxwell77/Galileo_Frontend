@@ -18,7 +18,7 @@ const AuthenticationService = {
         }
     },
 
-    Login : (token) => {
+    LoginToken : (token) => {
         if (!token) {
             console.error("Invalid AuthToken received:", token);
             return;
