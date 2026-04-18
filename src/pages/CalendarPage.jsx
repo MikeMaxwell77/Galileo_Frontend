@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import "./CalendarPage.css";
+import { useGeoLocation } from "../components/geoLocation/GeoLocation";
+import { AstronomyBodiesInterface } from "../astronomyAPI/BodiesApi";
+import { WeatherService } from "../GalileoBackendServices/WeatherService";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -9,38 +12,57 @@ const MONTH_NAMES = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home", icon: "space_dashboard", path: "/" },
-  { label: "Explore", icon: "explore", path: "/explore" },
-  { label: "Calendar", icon: "calendar_month", path: "/calendar", active: true },
-  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
-  { label: "Account", icon: "person", path: "/account" },
+  { label: "Home",      icon: "space_dashboard", path: "/" },
+  { label: "Explore",   icon: "explore",         path: "/explore" },
+  { label: "Calendar",  icon: "calendar_month",  path: "/calendar", active: true },
+  { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
+  { label: "Account",   icon: "person",          path: "/account" },
 ];
+
+const getMoonPhase = (date) => {
+  const knownNewMoon = new Date("2000-01-06T18:14:00Z").getTime();
+  const lunarCycle = 29.530588853 * 24 * 60 * 60 * 1000;
+  const pct = ((date.getTime() - knownNewMoon) % lunarCycle + lunarCycle) % lunarCycle / lunarCycle;
+  if (pct < 0.033 || pct >= 0.967) return "New Moon";
+  if (pct < 0.25)  return "Waxing Crescent";
+  if (pct < 0.283) return "First Quarter";
+  if (pct < 0.5)   return "Waxing Gibbous";
+  if (pct < 0.533) return "Full Moon";
+  if (pct < 0.75)  return "Waning Gibbous";
+  if (pct < 0.783) return "Last Quarter";
+  return "Waning Crescent";
+};
+
+const formatTime = (isoString) => {
+  if (!isoString) return "—";
+  try { return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+  catch { return "—"; }
+};
 
 export default function CalendarPage() {
   const today = new Date();
+  const { geoData, hasGeoData } = useGeoLocation();
 
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentYear, setCurrentYear]   = useState(today.getFullYear());
   const [calendarCells, setCalendarCells] = useState([]);
-  const [modal, setModal] = useState({ type: null, data: null });
+  const [modal,   setModal]   = useState({ type: null, data: null });
+  const [dayData, setDayData] = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
 
   const buildCalendarCells = (month, year) => {
     const cells = [];
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    const firstDay      = new Date(year, month, 1).getDay();
+    const daysInMonth   = new Date(year, month + 1, 0).getDate();
+    const daysInPrev    = new Date(year, month, 0).getDate();
 
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-      cells.push({ day: daysInPrevMonth - i, variant: "inactive" });
-    }
+    for (let i = firstDay - 1; i >= 0; i--)
+      cells.push({ day: daysInPrev - i, variant: "inactive" });
 
-    const isCurrentMonthYear =
-      month === today.getMonth() && year === today.getFullYear();
-
+    const isThisMonthYear = month === today.getMonth() && year === today.getFullYear();
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push({
         day: d,
-        variant: isCurrentMonthYear && d === today.getDate() ? "today" : undefined,
+        variant: isThisMonthYear && d === today.getDate() ? "today" : undefined,
         events: [],
       });
     }
@@ -49,26 +71,51 @@ export default function CalendarPage() {
   };
 
   const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
+    else setCurrentMonth(currentMonth + 1);
   };
 
   const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
+    else setCurrentMonth(currentMonth - 1);
   };
 
   useEffect(() => {
     buildCalendarCells(currentMonth, currentYear);
   }, [currentMonth, currentYear]);
+
+  useEffect(() => {
+    if (modal.type !== "day" || !modal.data || !hasGeoData || !geoData) return;
+
+    const { day, month, year } = modal.data;
+    const date = new Date(year, month, day, 12, 0, 0);
+
+    setDayData({ loading: true, weather: null, sunEvents: null, moonEvents: null });
+
+    const fetchAll = async () => {
+      const [weatherResult, sunResult, moonResult] = await Promise.allSettled([
+        WeatherService.FetchForecastForDate({ latitude: geoData.latitude, longitude: geoData.longitude, date }),
+        AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "sun",  latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
+        AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "moon", latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
+      ]);
+
+      setDayData({
+        loading:    false,
+        weather:    weatherResult.status === "fulfilled" ? weatherResult.value : null,
+        sunEvents:  sunResult.status    === "fulfilled" ? sunResult.value    : null,
+        moonEvents: moonResult.status   === "fulfilled" ? moonResult.value   : null,
+      });
+    };
+
+    fetchAll();
+  }, [modal.data]);
+
+  const { day: selDay, month: selMonth, year: selYear } = modal.data ?? {};
+  const selectedDate = modal.data ? new Date(selYear, selMonth, selDay) : null;
+  const moonPhase    = selectedDate ? getMoonPhase(selectedDate) : null;
+
+  const sunEvents  = dayData.sunEvents?.data?.events  ?? [];
+  const moonEvents = dayData.moonEvents?.data?.events ?? [];
 
   return (
     <div className="page-root">
@@ -90,7 +137,8 @@ export default function CalendarPage() {
         <div className="sidebar-inner">
           <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
           <div className="sidebar-section-label">Navigation</div>
-          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mb-3" style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.8rem" }}>
+          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mb-3"
+            style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.8rem" }}>
             <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>add</span>
             New Observation
           </button>
@@ -105,7 +153,7 @@ export default function CalendarPage() {
         </div>
         <div className="sidebar-footer d-flex flex-column gap-1">
           <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-          <a href="/support" className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
+          <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
         </div>
       </aside>
 
@@ -130,7 +178,8 @@ export default function CalendarPage() {
 
           <div className="calendar-grid">
             {DAYS.map((day, i) => (
-              <div key={day} className="cal-header-cell" style={{ color: i === 0 ? "var(--clr-primary)" : "var(--clr-on-surface)" }}>
+              <div key={day} className="cal-header-cell"
+                style={{ color: i === 0 ? "var(--clr-primary)" : "var(--clr-on-surface)" }}>
                 {day}
               </div>
             ))}
@@ -141,16 +190,14 @@ export default function CalendarPage() {
                 </div>
               );
               return (
-                <div
-                  key={i}
+                <div key={i}
                   className={`cal-cell ${cell.variant === "today" ? "today" : ""}`}
                   onClick={() => setModal({ type: "day", data: { day: cell.day, month: currentMonth, year: currentYear } })}
-                  style={{ cursor: "pointer" }}
-                >
+                  style={{ cursor: "pointer" }}>
                   <span className={`cal-day-num ${cell.variant === "today" ? "today-num" : ""}`}>
                     {cell.day}
                   </span>
-                  {cell.events && cell.events.map((ev, j) => (
+                  {cell.events.map((ev, j) => (
                     <div key={j} className={`cal-event ${ev.color}`}>{ev.text}</div>
                   ))}
                 </div>
@@ -166,18 +213,91 @@ export default function CalendarPage() {
 
       {modal.type && (
         <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="cal-modal-content" onClick={(e) => e.stopPropagation()}>
 
             {modal.type === "day" && (
               <>
-                <h2 className="font-headline fw-bold">
-                  {MONTH_NAMES[modal.data.month]} {modal.data.day}, {modal.data.year}
-                </h2>
-                <p className="page-subtitle">No events scheduled. — content coming soon.</p>
-                <div className="d-flex gap-2 mt-3">
-                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>
-                    Close
-                  </button>
+                <div className="d-flex justify-content-between align-items-start mb-4">
+                  <h2 className="font-headline fw-bold mb-0">
+                    {MONTH_NAMES[selMonth]} {selDay}, {selYear}
+                  </h2>
+                  <span className="page-subtitle mb-0" style={{ textAlign: "right" }}>{moonPhase}</span>
+                </div>
+
+                {!hasGeoData && (
+                  <p className="page-subtitle">
+                    Share your location on the Explore page to see sky events and local weather.
+                  </p>
+                )}
+
+                {hasGeoData && dayData.loading && (
+                  <p className="page-subtitle">Loading sky data...</p>
+                )}
+
+                {hasGeoData && !dayData.loading && (
+                  <div className="row g-4">
+
+                    <div className="col-12 col-md-6">
+                      <h4 className="font-headline fw-bold mb-2"
+                        style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-tertiary)" }}>
+                        WEATHER
+                      </h4>
+                      {dayData.weather?.length > 0 ? (
+                        dayData.weather.map((p, i) => (
+                          <div key={i} className="mb-2" style={{ fontSize: "0.85rem" }}>
+                            <div><strong>{p.name}</strong></div>
+                            <div>{p.temperature}°{p.temperatureUnit} — {p.shortForecast}</div>
+                            {p.windSpeed && (
+                              <div style={{ color: "var(--clr-on-surface-variant)", fontSize: "0.8rem" }}>
+                                Wind: {p.windSpeed} {p.windDirection}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
+                          Unavailable — weather.gov covers US locations only.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-12 col-md-3">
+                      <h4 className="font-headline fw-bold mb-2"
+                        style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
+                        SUN
+                      </h4>
+                      {sunEvents.length > 0 ? (
+                        sunEvents.map((ev, i) => (
+                          <div key={i} style={{ fontSize: "0.85rem", textTransform: "capitalize", marginBottom: "0.25rem" }}>
+                            {ev.type}: <strong>{formatTime(ev.time)}</strong>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
+                      )}
+                    </div>
+
+                    <div className="col-12 col-md-3">
+                      <h4 className="font-headline fw-bold mb-2"
+                        style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
+                        MOON
+                      </h4>
+                      {moonEvents.length > 0 ? (
+                        moonEvents.map((ev, i) => (
+                          <div key={i} style={{ fontSize: "0.85rem", textTransform: "capitalize", marginBottom: "0.25rem" }}>
+                            {ev.type}: <strong>{formatTime(ev.time)}</strong>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+
+                <div className="d-flex gap-2 mt-4">
+                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>Close</button>
                 </div>
               </>
             )}

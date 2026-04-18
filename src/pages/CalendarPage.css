@@ -8,10 +8,10 @@
     z-index: 9999;
 }
 
-.modal-content {
+.cal-modal-content {
     background: #0f172a;
     padding: 2rem;
     border-radius: 16px;
-    width: 400px;
+    width: 800px;
     max-width: 90%;
 }

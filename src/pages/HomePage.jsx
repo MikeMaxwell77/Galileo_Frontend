@@ -1,14 +1,14 @@
+import { useState, useEffect } from "react";
+
 const BOOKMARKS = [
   { icon: "database", iconBg: "rgba(186,146,250,0.1)", iconColor: "var(--clr-secondary)", title: "AI Model Archive 2024",  desc: "The largest curated collection of open-source LLMs and training datasets for cosmic simulation.", tag: "Science / AI" },
   { icon: "palette",  iconBg: "rgba(255,231,146,0.1)", iconColor: "var(--clr-tertiary)",  title: "Nebula Design Assets",   desc: "High-resolution procedural texture maps for celestial rendering and UI backgrounds.", tag: "Design / Assets" },
   { icon: "public",   iconBg: "rgba(224,142,254,0.1)", iconColor: "var(--clr-primary)",   title: "Planetary Governance",   desc: "Whitepaper discussing legal frameworks for sustainable lunar and martian colonies.", tag: "Legal / Space" },
 ];
 
-const COLLECTIONS = [
-  { title: "Interstellar Physics", subtitle: "12 Transmissions • Science Archive", overlayColor: "rgba(224,142,254,0.2)", titleHoverColor: "var(--clr-primary)",
-    imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDmd-Fk1TnGuu58BdAiSF7zAOoPlWUhRig_ViO4ZLH8A-YydM0ZTE7CAFH60yz9jL-CJo3zOh-ISN_mL_frdU9IcIYRdh7uBfRds-qe2ePw2Fvi0yTbEvVdpJhT4--JTEM5N7MYAnc11PFessUTh_syx-HxTigoOtFIkq8JYV2amHpm4W1-U4oyEA6DS9TaQVOjSjF3PF58UsYQSKQvGOVNDMnFZ-bllSdhvmgRWELAnptSG_xS-KioeBuhZXDAoOaxig7a653NsqU", "https://lh3.googleusercontent.com/aida-public/AB6AXuCxddKjjqKIeBVi3dN-fqoqXsuwGZZw7M6RKcxL-D--q55ANFw_GdUR9CpQs8qp0t11QCTKzNmi_49lIQCrFcw8thYcLrM9NKtyp_crsWNUHp1hWzmX_xrdj7sJ6wYeVkD5jtg66rtnCMaFN7riV7TsynMsom15Btj-6j14sVOPdpts-J85wUzq3bL7d_iAogG4s301I_580kyHc8Bfy6M0H3apYA_JcqtGKiR89lAcvXmus4U1RH6tMHqteQniiBQRHcVO1Km4eRE"] },
-  { title: "Aesthetic Archetypes", subtitle: "28 Transmissions • Design Research", overlayColor: "rgba(186,146,250,0.2)", titleHoverColor: "var(--clr-secondary)",
-    imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDJpbcylIgwTzEd01l4X9XqQlRoK_K6C1FbDVzKiU6XX-AYLNf1QBX8it6yj5x0vVnZ1uyAb200aqHKLHyxbrMueObV5CYzbm89YE5u97MzkbTroLHfTqX1pTp2fSo9Bw4cGcspgdBBayyNLAne0IWxEVsfEiNn2JdUCBEePuUwPDd8qWOKFDwwxrM7LTUBOsXjWFLWuu8ujFRdm9My4wf4V4Dr4hACsYN3mMrRywlpKvHZUpcjFX5r-BJBSW4-UI9jfq3lW-ZM1dg", "https://lh3.googleusercontent.com/aida-public/AB6AXuAMOmjkMyNEJPmEPSFR37yoEQxLRQisrsRf8CQO6nk4SzT7wz4bvpdJ3rC6CFid87cHvjIrjv-4__oM1wcgp0LLButPKhI1GtArBWY-pLnmZDxG1otyGVbAwvsgsI8Qt7QjrTTLViK_dZLnCQZTyv6ULgoPBBu7y9K4hrToXvAETw4ZFANtJ40q1aoO0sY4wdDjBbBWbBB12X2jFQYbbokGpBgPUUgSxJPlEYM8LCW4up7I4c70JLxQHrV5E6BKlpvQXG8UZNOu-HY"] },
+const COLLECTION_META = [
+  { title: "Interstellar Physics", subtitle: "12 Transmissions • Science Archive", overlayColor: "rgba(224,142,254,0.2)", titleHoverColor: "var(--clr-primary)" },
+  { title: "Aesthetic Archetypes", subtitle: "28 Transmissions • Design Research", overlayColor: "rgba(186,146,250,0.2)", titleHoverColor: "var(--clr-secondary)" },
 ];
 
 const GUIDE_STEPS = [
@@ -25,7 +25,32 @@ const NAV_ITEMS = [
   { label: "Account",   icon: "person",          path: "/account" },
 ];
 
+const FALLBACK_IMGS = [
+  "https://apod.nasa.gov/apod/image/2501/Horsehead_Webb_960.jpg",
+  "https://apod.nasa.gov/apod/image/2501/NGC1232_ESO_960.jpg",
+  "https://apod.nasa.gov/apod/image/2501/M31_HubbleSubaru_960.jpg",
+  "https://apod.nasa.gov/apod/image/2501/OrionNebula_Webb_960.jpg",
+];
+
 export default function HomePage() {
+  const [apodImgs, setApodImgs] = useState(FALLBACK_IMGS);
+
+  useEffect(() => {
+    const key = import.meta.env.VITE_NASA_API_KEY ?? "DEMO_KEY";
+    fetch(`https://api.nasa.gov/planetary/apod?api_key=${key}&count=8`)
+      .then(r => r.json())
+      .then(data => {
+        const images = data.filter(d => d.media_type === "image").map(d => d.url);
+        if (images.length >= 4) setApodImgs(images);
+      })
+      .catch(() => {});
+  }, []);
+
+  const collections = COLLECTION_META.map((col, i) => ({
+    ...col,
+    imgs: [apodImgs[i * 2] ?? FALLBACK_IMGS[i * 2], apodImgs[i * 2 + 1] ?? FALLBACK_IMGS[i * 2 + 1]],
+  }));
+
   return (
     <div className="page-root">
       <div className="nebula-glow-bg" />
@@ -60,7 +85,8 @@ export default function HomePage() {
               </a>
             ))}
           </nav>
-          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4" style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.75rem" }}>
+          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4"
+            style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.75rem" }}>
             New Observation
           </button>
         </div>
@@ -120,7 +146,7 @@ export default function HomePage() {
               <h2 className="font-headline fw-bold section-heading mb-0">Bookmark Collections</h2>
             </div>
             <div className="row g-4">
-              {COLLECTIONS.map((col) => (
+              {collections.map((col) => (
                 <div key={col.title} className="col-12 col-md-6">
                   <div className="glass-card collection-card">
                     <div className="collection-img-wrap">
