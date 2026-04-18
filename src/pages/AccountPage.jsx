@@ -20,7 +20,28 @@ export default function AccountPage() {
   const [searchResults, setSearchResults] = useState([]); 
   const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [updateData, setUpdateData] = useState({
+      password: "",
+      isPrivate: false 
+  });
 
+  const handleAccountUpdate = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      try {
+          // Replace with your actual settings endpoint
+          await axios.put(`${API_BASE_URL}/account/me`, updateData, {
+              headers: AuthenticationService.getAuthHeader(),
+          });
+          alert("Node Settings Reconfigured.");
+          setShowModal(false);
+      } catch (err) {
+          console.error("Update failed:", err);
+      } finally {
+          setLoading(false);
+      }
+  };
   
   const handleSearch = (value) => {
     setSearchQuery(value);
@@ -214,7 +235,12 @@ export default function AccountPage() {
                   <p className="danger-text mb-0">Account termination and data wipe.</p>
                 </div>
                 <div className="d-flex gap-3">
-                  <button onClick={() => { AuthenticationService.logout(); navigate("/login"); }} className="btn-sign-out">Sign Out</button>
+                  <button onClick={() => { AuthenticationService.logout(); navigate("/login"); }} className="btn-sign-out">
+                      Sign Out
+                  </button>
+                  <button className=" py-1 px-3" onClick={() => setShowModal(true)}>
+                      Update Account
+                  </button>
                   <button onClick={async () => {
                     if(window.confirm("Erase Node?")) {
                        await axios.delete(`${API_BASE_URL}/account/me`, { headers: AuthenticationService.getAuthHeader() });
@@ -228,6 +254,56 @@ export default function AccountPage() {
           </div>
         </div>
       </main>
+      {showModal && (
+          <div className="modal-overlay" style={{
+              position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+              background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+              display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+          }}>
+              <div className="bento-card" style={{ maxWidth: '400px', width: '90%', border: '1px solid var(--clr-outline)' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                      <h3 className="font-headline fw-bold mb-0">Node Configuration</h3>
+                      <button className="icon-btn" onClick={() => setShowModal(false)}>
+                          <span className="material-symbols-outlined">close</span>
+                      </button>
+                  </div>
+
+                  <form onSubmit={handleAccountUpdate} className="d-flex flex-column gap-4">
+                      {/* Password Field */}
+                      <div>
+                          <label className="card-desc mb-2 d-block">New Access Key</label>
+                          <input 
+                              type="password" 
+                              className="galileo-input form-control" 
+                              placeholder="Enter new password..."
+                              value={updateData.password}
+                              onChange={(e) => setUpdateData({...updateData, password: e.target.value})}
+                          />
+                      </div>
+
+                      {/* Privacy Toggle */}
+                      <div className="d-flex align-items-center justify-content-between">
+                          <div>
+                              <label className="fw-bold mb-0">Private Node</label>
+                              <p className="card-desc mb-0" style={{ fontSize: '0.8rem' }}>Hide from global search</p>
+                          </div>
+                          <div className="form-check form-switch">
+                              <input 
+                                  className="form-check-input" 
+                                  type="checkbox" 
+                                  checked={updateData.isPrivate}
+                                  onChange={(e) => setUpdateData({...updateData, isPrivate: e.target.checked})}
+                              />
+                          </div>
+                      </div>
+
+                      <button type="submit" className="btn-warp" disabled={loading}>
+                          {loading ? "Processing..." : "Sync Changes"}
+                      </button>
+                  </form>
+              </div>
+          </div>
+      )}
     </div>
   );
 }

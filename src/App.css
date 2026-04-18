@@ -1405,3 +1405,36 @@ body {
   opacity: 0.4;
   mix-blend-mode: screen;
 }
+
+/* -- accounts page update account form -- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7); /* Dims the background */
+    backdrop-filter: blur(4px);    /* Adds that glass effect */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-outline);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Style the Bootstrap Switch for a more "space" look */
+.form-check-input:checked {
+    background-color: var(--clr-primary);
+    border-color: var(--clr-primary);
+}
