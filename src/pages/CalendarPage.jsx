@@ -70,6 +70,20 @@ const formatTime = (isoString) => {
   catch { return "—"; }
 };
 
+const SUN_EVENT_LABELS = { rise: "Sunrise", set: "Sunset", transit: "Solar Noon" };
+const MOON_EVENT_LABELS = { rise: "Moonrise", set: "Moonset", transit: "Moon Transit" };
+
+// Module-level cache — persists across re-renders, cleared on page reload
+const _cache = new Map();
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const _getCache = (key) => {
+  const e = _cache.get(key);
+  if (!e) return undefined;
+  if (Date.now() - e.ts > CACHE_TTL_MS) { _cache.delete(key); return undefined; }
+  return e.data;
+};
+const _setCache = (key, data) => _cache.set(key, { data, ts: Date.now() });
+
 export default function CalendarPage() {
   const today = new Date();
   const { geoData, hasGeoData } = useGeoLocation();
@@ -77,8 +91,9 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear]   = useState(today.getFullYear());
   const [calendarCells, setCalendarCells] = useState([]);
-  const [modal,   setModal]   = useState({ type: null, data: null });
-  const [dayData, setDayData] = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
+  const [modal,         setModal]         = useState({ type: null, data: null });
+  const [dayData,       setDayData]       = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
+  const [bodyPositions, setBodyPositions] = useState(null);
 
   const buildCalendarCells = (month, year) => {
     const cells = [];
@@ -124,34 +139,76 @@ export default function CalendarPage() {
     setDayData({ loading: true, weather: null, sunEvents: null, moonEvents: null });
 
     const daysDiff = Math.floor((date - new Date()) / (1000 * 60 * 60 * 24));
-    const withinForecastWindow = daysDiff >= -1 && daysDiff <= 10;
+    const withinForecastWindow = daysDiff >= 0 && daysDiff <= 10;
+
+    const locKey = `${parseFloat(geoData.latitude).toFixed(4)}:${parseFloat(geoData.longitude).toFixed(4)}`;
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const wKey  = `weather:${locKey}:${dateStr}`;
+    const sKey  = `sun:${locKey}:${dateStr}`;
+    const mKey  = `moon:${locKey}:${dateStr}`;
 
     const fetchAll = async () => {
+      const cW = withinForecastWindow ? _getCache(wKey) : null;
+      const cS = _getCache(sKey);
+      const cM = _getCache(mKey);
+
       const [weatherResult, sunResult, moonResult] = await Promise.allSettled([
-        withinForecastWindow
-          ? WeatherService.FetchForecastForDate({ latitude: geoData.latitude, longitude: geoData.longitude, date })
-          : Promise.resolve(null),
-        AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "sun",  latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
-        AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "moon", latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
+        cW !== undefined
+          ? Promise.resolve(cW)
+          : withinForecastWindow
+            ? WeatherService.FetchForecastForDate({ latitude: geoData.latitude, longitude: geoData.longitude, date })
+            : Promise.resolve(null),
+        cS !== undefined
+          ? Promise.resolve(cS)
+          : AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "sun",  latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
+        cM !== undefined
+          ? Promise.resolve(cM)
+          : AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "moon", latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
       ]);
 
-      setDayData({
-        loading:    false,
-        weather:    weatherResult.status === "fulfilled" ? weatherResult.value : null,
-        sunEvents:  sunResult.status    === "fulfilled" ? sunResult.value    : null,
-        moonEvents: moonResult.status   === "fulfilled" ? moonResult.value   : null,
-      });
+      const weather    = weatherResult.status === "fulfilled" ? weatherResult.value : null;
+      const sunEvents  = sunResult.status     === "fulfilled" ? sunResult.value     : null;
+      const moonEvents = moonResult.status    === "fulfilled" ? moonResult.value    : null;
+
+      if (withinForecastWindow && cW === undefined && weather   !== null) _setCache(wKey, weather);
+      if (cS === undefined && sunEvents  !== null) _setCache(sKey, sunEvents);
+      if (cM === undefined && moonEvents !== null) _setCache(mKey, moonEvents);
+
+      setDayData({ loading: false, weather, sunEvents, moonEvents });
     };
 
     fetchAll();
   }, [modal.data]);
 
+  useEffect(() => {
+    if (!hasGeoData || !geoData) return;
+
+    const locKey = `${parseFloat(geoData.latitude).toFixed(4)}:${parseFloat(geoData.longitude).toFixed(4)}`;
+    const posKey = `positions:${locKey}`;
+    const cached = _getCache(posKey);
+    if (cached !== undefined) { setBodyPositions(cached); return; }
+
+    const now    = new Date();
+    const untill = new Date(now);
+    untill.setDate(untill.getDate() + 10);
+
+    AstronomyBodiesInterface.FetchAllBodyPositions({
+      longitude: geoData.longitude,
+      latitude:  geoData.latitude,
+      elevation: geoData.elevation ?? 0,
+      now,
+      untill,
+    }).then((data) => {
+      if (data) { _setCache(posKey, data); setBodyPositions(data); }
+    });
+  }, [hasGeoData, geoData]);
+
   const { day: selDay, month: selMonth, year: selYear } = modal.data ?? {};
-  const selectedDate        = modal.data ? new Date(selYear, selMonth, selDay) : null;
-  const moonPhaseData       = selectedDate ? getMoonPhaseData(selectedDate) : null;
-  const withinForecastWindow = selectedDate
-    ? (() => { const d = Math.floor((selectedDate - new Date()) / 864e5); return d >= -1 && d <= 10; })()
-    : false;
+  const selectedDate         = modal.data ? new Date(selYear, selMonth, selDay) : null;
+  const moonPhaseData        = selectedDate ? getMoonPhaseData(selectedDate) : null;
+  const _selDaysDiff         = selectedDate ? Math.floor((selectedDate - new Date()) / 864e5) : null;
+  const withinForecastWindow = _selDaysDiff !== null ? (_selDaysDiff >= 0 && _selDaysDiff <= 10) : false;
+  const withinPositionWindow = _selDaysDiff !== null ? (_selDaysDiff >= 0 && _selDaysDiff <= 10) : false;
 
   const sunEvents  = dayData.sunEvents?.data?.events  ?? [];
   const moonEvents = dayData.moonEvents?.data?.events ?? [];
@@ -302,8 +359,8 @@ export default function CalendarPage() {
                         ))
                       ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
-                          {dayData.weather === null && !withinForecastWindow
-                            ? "Weather forecast only available within 10 days."
+                          {!withinForecastWindow
+                            ? "Weather data only available within 10 days of today's date."
                             : "Unavailable — weather.gov covers US locations only."}
                         </p>
                       )}
@@ -316,8 +373,8 @@ export default function CalendarPage() {
                       </h4>
                       {sunEvents.length > 0 ? (
                         sunEvents.map((ev, i) => (
-                          <div key={i} style={{ fontSize: "0.85rem", textTransform: "capitalize", marginBottom: "0.25rem" }}>
-                            {ev.type}: <strong>{formatTime(ev.time)}</strong>
+                          <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+                            {SUN_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
                           </div>
                         ))
                       ) : (
@@ -332,14 +389,47 @@ export default function CalendarPage() {
                       </h4>
                       {moonEvents.length > 0 ? (
                         moonEvents.map((ev, i) => (
-                          <div key={i} style={{ fontSize: "0.85rem", textTransform: "capitalize", marginBottom: "0.25rem" }}>
-                            {ev.type}: <strong>{formatTime(ev.time)}</strong>
+                          <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+                            {MOON_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
                           </div>
                         ))
                       ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
                       )}
                     </div>
+
+                    {withinPositionWindow && (() => {
+                      const dateStr = `${selYear}-${String(selMonth + 1).padStart(2, "0")}-${String(selDay).padStart(2, "0")}`;
+                      const rows = bodyPositions?.data?.rows ?? bodyPositions?.rows ?? [];
+                      const PRIORITY = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"];
+                      const filtered = rows.filter(r => PRIORITY.includes(r.body?.id));
+                      if (filtered.length === 0) return null;
+                      return (
+                        <div className="col-12">
+                          <h4 className="font-headline fw-bold mb-2"
+                            style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-on-surface-variant)" }}>
+                            BODY POSITIONS AT NOON
+                          </h4>
+                          <div className="d-flex flex-wrap gap-4">
+                            {filtered.map((row, i) => {
+                              const pos = (row.positions ?? []).find(p => typeof p.date === "string" && p.date.startsWith(dateStr));
+                              if (!pos) return null;
+                              const alt = pos.horizontal?.altitude?.degrees ?? "—";
+                              const az  = pos.horizontal?.azimuth?.degrees  ?? "—";
+                              const con = pos.constellation?.short ?? "";
+                              return (
+                                <div key={i} style={{ fontSize: "0.8rem", minWidth: "80px" }}>
+                                  <div style={{ fontWeight: 600, textTransform: "capitalize" }}>{row.body.name}</div>
+                                  <div style={{ color: "var(--clr-on-surface-variant)" }}>
+                                    Alt {alt}° · Az {az}°{con ? ` · ${con}` : ""}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   </div>
                 )}

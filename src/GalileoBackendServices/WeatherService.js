@@ -15,6 +15,6 @@ export const WeatherService = {
     const targetStr = new Date(date).toDateString();
 
     const matching = periods.filter(p => new Date(p.startTime).toDateString() === targetStr);
-    return matching.length > 0 ? matching : periods.slice(0, 2);
+    return matching.length > 0 ? matching : [];
   }
 };
