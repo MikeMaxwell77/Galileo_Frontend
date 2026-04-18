@@ -202,7 +202,6 @@ export default function BookmarksPage() {
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
 
-          {!authenticated && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
       </nav>
 

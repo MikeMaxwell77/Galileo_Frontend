@@ -273,7 +273,6 @@ export default function CalendarPage() {
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>
         </div>
       </nav>
 

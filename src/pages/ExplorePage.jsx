@@ -354,7 +354,6 @@ export default function ExplorePage() {
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
           
-          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
       </nav>
 

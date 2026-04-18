@@ -1,3 +1,5 @@
+import { Link, useNavigate } from "react-router-dom";
+
 const BOOKMARKS = [
   { icon: "database", iconBg: "rgba(186,146,250,0.1)", iconColor: "var(--clr-secondary)", title: "AI Model Archive 2024",  desc: "The largest curated collection of open-source LLMs and training datasets for cosmic simulation.", tag: "Science / AI" },
   { icon: "palette",  iconBg: "rgba(255,231,146,0.1)", iconColor: "var(--clr-tertiary)",  title: "Nebula Design Assets",   desc: "High-resolution procedural texture maps for celestial rendering and UI backgrounds.", tag: "Design / Assets" },
@@ -34,8 +36,6 @@ const NAV_ITEMS = [
 
 
 /* NASA APOD fetch — disabled for now, re-enable when ready
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
   const [apodImgs, setApodImgs] = useState([]);
   useEffect(() => {
     const key = import.meta.env.VITE_NASA_API_KEY ?? "DEMO_KEY";
@@ -72,7 +72,6 @@ export default function HomePage() {
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>
         </div>
       </nav>
 
