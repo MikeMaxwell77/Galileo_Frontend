@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import BookmarkService from "../GalileoBackendServices/BookmarksService";
@@ -123,8 +123,7 @@ export default function BookmarksPage() {
   };
 
   const handleLogin = () => {
-    //console.log("Login was pressed")
-    setModal({ type: "login", data: null })
+    navigate("/");
   }
 
   const TryLogin = async () => {
@@ -195,61 +194,38 @@ export default function BookmarksPage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/" className="nav-link-item">Home</a>
-          <a href="/explore" className="nav-link-item active">Explore</a>
-          <a href="/calendar" className="nav-link-item">Calendar</a>
-          <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
+          <Link to="/home"      className="nav-link-item">Home</Link>
+          <Link to="/explore"   className="nav-link-item">Explore</Link>
+          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/bookmarks" className="nav-link-item active">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
-          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
-
           {!authenticated && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
+          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
         </div>
       </nav>
 
       {/* ── Sidebar ── */}
       <aside className="sidebar d-none d-lg-flex flex-column">
-        <div className="p-4 py-5">
-          <h1 className="galileo-logo font-headline fw-black" style={{ fontSize: "1.2rem", marginBottom: "0.25rem" }}>Galileo</h1>
-          <p className="sidebar-section-label" style={{ color: "rgba(224,142,254,0.6)" }}>Cosmic Cartographer</p>
+        <div className="sidebar-inner">
+          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
+          <div className="sidebar-section-label">Navigation</div>
+          <nav className="d-flex flex-column gap-1">
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+                <span className="material-symbols-outlined">{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
-
-        <nav className="flex-grow-1">
-          <div className="px-4 py-3">
-            <span className="sidebar-section-label" style={{ color: "rgba(224,142,254,0.6)" }}>Navigation</span>
-          </div>
-          {NAV_ITEMS.map((item) => (
-            <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-              <span className="material-symbols-outlined" style={ item.active ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
-          {/* FIX-ME should we remove this btn?*/}
-        <div className="mt-auto p-4" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
-          <button className="btn-warp mb-4" style={{ borderRadius: "0.75rem", fontSize: "0.875rem" }}>
-            New Observation
-          </button>
-          <div className="d-flex flex-column gap-1">
-            <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-            <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
-          </div>
+        <div className="sidebar-footer">
+          <button className="sidebar-new-obs-btn">New Observation</button>
         </div>
       </aside>
 
       {/* ── Main ── */}
       <main className="page-main bookmarks-page">
-
-        {/* ── Top Bar ── */}
-        <header className="bookmarks-topbar">
-          <div className="d-flex align-items-center gap-3">
-            <span className="material-symbols-outlined d-lg-none" style={{ color: "var(--clr-primary)", cursor: "pointer" }}>menu</span>
-            <h1 className="font-headline fw-bold" style={{ fontSize: "1.4rem", letterSpacing: "-0.02em" }}>Bookmarks</h1>
-          </div>
-          
-        </header>
-
 
         {/* ── Content ── */}
         <div className="page-content">

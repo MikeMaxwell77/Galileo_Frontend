@@ -126,13 +126,14 @@ export default function AccountPage() {
 
       <aside className="sidebar d-none d-lg-flex flex-column">
         <div className="sidebar-inner">
-          <div className="sidebar-section-label" style={{ color: "var(--clr-primary)" }}>Main Deck</div>
+          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
+          <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -28,6 +30,7 @@ export default function LoginPage() {
 
         AuthenticationService.LoginToken(token);
         setMessage("Login Succesful");
+        navigate("/home");
       }
       else { // Register
         await AuthenticationService.Register(email, password);
