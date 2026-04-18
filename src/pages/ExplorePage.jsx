@@ -369,11 +369,6 @@ export default function ExplorePage() {
               </Link>
             ))}
           </nav>
-          <div className="sidebar-section-label mt-4">System</div>
-          <nav className="d-flex flex-column gap-1">
-            <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
-            <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
-          </nav>
         </div>
         <div className="sidebar-footer">
           <button className="sidebar-new-obs-btn">New Observation</button>

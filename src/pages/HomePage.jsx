@@ -100,10 +100,6 @@ export default function HomePage() {
             New Observation
           </button>
         </div>
-        <div className="sidebar-footer d-flex flex-column gap-1" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
-          <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
-          <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
-        </div>
       </aside>
 
       <main className="page-main">

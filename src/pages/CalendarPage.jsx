@@ -101,6 +101,48 @@ const MoonIcon = ({ size = 22 }) => (
   </svg>
 );
 
+const SunriseIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="12" y1="2" x2="12" y2="6" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="4.9" y1="4.9" x2="7.1" y2="7.1" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="2" y1="12" x2="5" y2="12" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="19" y1="12" x2="22" y2="12" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="16.9" y1="7.1" x2="19.1" y2="4.9" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="12" cy="13" r="3.5" fill="rgba(255,210,80,0.95)"/>
+    <line x1="3" y1="19" x2="21" y2="19" stroke="rgba(255,210,80,0.5)" strokeWidth="1.5" strokeLinecap="round"/>
+    <polyline points="9,16 12,12 15,16" stroke="rgba(255,210,80,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const SunsetIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="12" y1="2" x2="12" y2="6" stroke="rgba(255,160,60,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="4.9" y1="4.9" x2="7.1" y2="7.1" stroke="rgba(255,160,60,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="2" y1="12" x2="5" y2="12" stroke="rgba(255,160,60,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="19" y1="12" x2="22" y2="12" stroke="rgba(255,160,60,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="16.9" y1="7.1" x2="19.1" y2="4.9" stroke="rgba(255,160,60,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="12" cy="13" r="3.5" fill="rgba(255,160,60,0.95)"/>
+    <line x1="3" y1="19" x2="21" y2="19" stroke="rgba(255,160,60,0.5)" strokeWidth="1.5" strokeLinecap="round"/>
+    <polyline points="9,13 12,17 15,13" stroke="rgba(255,160,60,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const MoonriseIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 10.79A7 7 0 1 1 9.21 2 5.5 5.5 0 0 0 18 10.79z" fill="rgba(200,180,255,0.8)" stroke="rgba(200,180,255,0.5)" strokeWidth="1"/>
+    <line x1="3" y1="19" x2="21" y2="19" stroke="rgba(200,180,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+    <polyline points="9,17 12,13 15,17" stroke="rgba(200,180,255,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const MoonsetIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 10.79A7 7 0 1 1 9.21 2 5.5 5.5 0 0 0 18 10.79z" fill="rgba(200,180,255,0.8)" stroke="rgba(200,180,255,0.5)" strokeWidth="1"/>
+    <line x1="3" y1="19" x2="21" y2="19" stroke="rgba(200,180,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+    <polyline points="9,14 12,18 15,14" stroke="rgba(200,180,255,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
 const PlanetIcon = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="12" cy="12" r="5" fill="rgba(150,220,180,0.5)" stroke="rgba(150,220,180,0.8)" strokeWidth="1"/>
@@ -301,10 +343,6 @@ export default function CalendarPage() {
             ))}
           </nav>
         </div>
-        <div className="sidebar-footer d-flex flex-column gap-1">
-          <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
-          <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
-        </div>
       </aside>
 
       <main className="page-main">
@@ -432,15 +470,33 @@ export default function CalendarPage() {
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
                         SUN
                       </h4>
-                      {sunEvents.length > 0 ? (
-                        sunEvents.map((ev, i) => (
+                      {(() => {
+                        const rise = sunEvents.find(ev => ev.type === "rise");
+                        const set  = sunEvents.find(ev => ev.type === "set");
+                        return (rise || set) ? (
+                          <div className="d-flex flex-column gap-1 mb-2">
+                            {rise && (
+                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <SunriseIcon size={16} /><span>Sunrise: <strong>{formatTime(rise.time)}</strong></span>
+                              </div>
+                            )}
+                            {set && (
+                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <SunsetIcon size={16} /><span>Sunset: <strong>{formatTime(set.time)}</strong></span>
+                              </div>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
+                      {sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").length > 0 ? (
+                        sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
                           <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
                             {SUN_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
                           </div>
                         ))
-                      ) : (
+                      ) : sunEvents.length === 0 ? (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="col-12 col-md-3">
@@ -449,15 +505,33 @@ export default function CalendarPage() {
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
                         MOON
                       </h4>
-                      {moonEvents.length > 0 ? (
-                        moonEvents.map((ev, i) => (
+                      {(() => {
+                        const rise = moonEvents.find(ev => ev.type === "rise");
+                        const set  = moonEvents.find(ev => ev.type === "set");
+                        return (rise || set) ? (
+                          <div className="d-flex flex-column gap-1 mb-2">
+                            {rise && (
+                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <MoonriseIcon size={16} /><span>Moonrise: <strong>{formatTime(rise.time)}</strong></span>
+                              </div>
+                            )}
+                            {set && (
+                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <MoonsetIcon size={16} /><span>Moonset: <strong>{formatTime(set.time)}</strong></span>
+                              </div>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
+                      {moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").length > 0 ? (
+                        moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
                           <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
                             {MOON_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
                           </div>
                         ))
-                      ) : (
+                      ) : moonEvents.length === 0 ? (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
-                      )}
+                      ) : null}
                     </div>
 
                     {withinPositionWindow && (() => {

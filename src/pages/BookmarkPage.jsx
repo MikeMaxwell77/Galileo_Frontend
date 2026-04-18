@@ -219,10 +219,6 @@ export default function BookmarksPage() {
           ))}
         </nav>
         </div>
-        <div className="sidebar-footer d-flex flex-column gap-1">
-          <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
-          <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
-        </div>
       </aside>
 
       {/* ── Main ── */}
