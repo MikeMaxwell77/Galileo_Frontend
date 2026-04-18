@@ -8,7 +8,7 @@ import { AstronomyBodiesInterface, AstronomySearchInterface } from './astronomyA
 import Home from "./pages/Home";
 import ExplorePageDebug from './pages/ExplorePageDebug';
 import LoginTesting from './pages/LoginPageDebug';
-import Account from './pages/Account';
+//import Account from './pages/Account';
 import GeoLocationTestPage from './components/geoLocation/GeoLocationTestPage';
 
 
@@ -46,7 +46,7 @@ function App() {
           <Route path="/loginTest"     element={<LoginTesting />} />
           <Route path="/bookmarkTest" element={<BookmarksDebug/>} />
           <Route path="/accountTest" element={<AccountPageTest/>} />
-          <Route path="/accountLook" element={<Account/>} />
+          {/*<Route path="/accountLook" element={<Account/>} />*/}
 
           {/* PRIVILEGED ROUTES */}
 
