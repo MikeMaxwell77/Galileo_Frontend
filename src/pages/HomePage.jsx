@@ -25,7 +25,7 @@ const GUIDE_STEPS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/",          active: true },
+  { label: "Home",      icon: "space_dashboard", path: "/home",      active: true },
   { label: "Explore",   icon: "explore",         path: "/explore" },
   { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
   { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
@@ -61,18 +61,16 @@ export default function HomePage() {
       <div className="orb-bl" />
 
       <nav className="top-nav">
-        <div className="d-flex align-items-center gap-4">
-          <span className="galileo-logo font-headline fw-bold fs-4">Galileo</span>
-          <div className="d-none d-md-flex align-items-center gap-4">
-            <a href="/"          className="nav-link-item active">Home</a>
-            <a href="/explore"   className="nav-link-item">Explore</a>
-            <a href="/calendar"  className="nav-link-item">Calendar</a>
-            <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
-          </div>
+        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
+        <div className="d-none d-md-flex align-items-center gap-4">
+          <a href="/home"      className="nav-link-item active">Home</a>
+          <a href="/explore"   className="nav-link-item">Explore</a>
+          <a href="/calendar"  className="nav-link-item">Calendar</a>
+          <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm">Login</button>
+          <button className="btn-warp btn-warp-sm" onClick={() => window.location.href = "/"}>Login</button>
         </div>
       </nav>
 

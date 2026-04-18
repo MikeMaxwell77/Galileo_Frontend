@@ -15,7 +15,7 @@ const SETTINGS_PANELS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/" },
+  { label: "Home",      icon: "space_dashboard", path: "/home" },
   { label: "Explore",   icon: "explore",         path: "/explore" },
   { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
   { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },

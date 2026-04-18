@@ -12,7 +12,7 @@ const MONTH_NAMES = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/" },
+  { label: "Home",      icon: "space_dashboard", path: "/home" },
   { label: "Explore",   icon: "explore",         path: "/explore" },
   { label: "Calendar",  icon: "calendar_month",  path: "/calendar", active: true },
   { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
@@ -70,6 +70,42 @@ const formatTime = (isoString) => {
   catch { return "—"; }
 };
 
+const WeatherIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 19a4 4 0 1 1 0-8 1 1 0 0 1 0-.08A4.5 4.5 0 1 1 13.5 15H6z" fill="rgba(180,220,255,0.5)" stroke="rgba(180,220,255,0.7)" strokeWidth="1"/>
+    <line x1="8"  y1="20" x2="7"  y2="22" stroke="rgba(120,180,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="12" y1="20" x2="11" y2="22" stroke="rgba(120,180,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="16" y1="20" x2="15" y2="22" stroke="rgba(120,180,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const SunIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="4" fill="rgba(255,210,80,0.95)"/>
+    <line x1="12" y1="2"  x2="12" y2="5"  stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="12" y1="19" x2="12" y2="22" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="2"  y1="12" x2="5"  y2="12" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="19" y1="12" x2="22" y2="12" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="4.9" y1="4.9"   x2="7.1" y2="7.1"   stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="16.9" y1="16.9" x2="19.1" y2="19.1" stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="4.9" y1="19.1" x2="7.1" y2="16.9"   stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="16.9" y1="7.1" x2="19.1" y2="4.9"   stroke="rgba(255,210,80,0.9)" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const MoonIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="rgba(200,180,255,0.8)" stroke="rgba(200,180,255,0.5)" strokeWidth="1"/>
+  </svg>
+);
+
+const PlanetIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="5" fill="rgba(150,220,180,0.5)" stroke="rgba(150,220,180,0.8)" strokeWidth="1"/>
+    <ellipse cx="12" cy="12" rx="11" ry="4" stroke="rgba(150,220,180,0.6)" strokeWidth="1.2" fill="none" transform="rotate(-20 12 12)"/>
+  </svg>
+);
+
 const SUN_EVENT_LABELS = { rise: "Sunrise", set: "Sunset", transit: "Solar Noon" };
 const MOON_EVENT_LABELS = { rise: "Moonrise", set: "Moonset", transit: "Moon Transit" };
 
@@ -94,6 +130,12 @@ export default function CalendarPage() {
   const [modal,         setModal]         = useState({ type: null, data: null });
   const [dayData,       setDayData]       = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
   const [bodyPositions, setBodyPositions] = useState(null);
+  const [liveTime,      setLiveTime]      = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setLiveTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const buildCalendarCells = (month, year) => {
     const cells = [];
@@ -138,7 +180,9 @@ export default function CalendarPage() {
 
     setDayData({ loading: true, weather: null, sunEvents: null, moonEvents: null });
 
-    const daysDiff = Math.floor((date - new Date()) / (1000 * 60 * 60 * 24));
+    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+    const dateMidnight  = new Date(year, month, day, 0, 0, 0);
+    const daysDiff = Math.round((dateMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
     const withinForecastWindow = daysDiff >= 0 && daysDiff <= 10;
 
     const locKey = `${parseFloat(geoData.latitude).toFixed(4)}:${parseFloat(geoData.longitude).toFixed(4)}`;
@@ -204,9 +248,11 @@ export default function CalendarPage() {
   }, [hasGeoData, geoData]);
 
   const { day: selDay, month: selMonth, year: selYear } = modal.data ?? {};
-  const selectedDate         = modal.data ? new Date(selYear, selMonth, selDay) : null;
-  const moonPhaseData        = selectedDate ? getMoonPhaseData(selectedDate) : null;
-  const _selDaysDiff         = selectedDate ? Math.floor((selectedDate - new Date()) / 864e5) : null;
+  const selectedDate = modal.data ? new Date(selYear, selMonth, selDay) : null;
+  const moonPhaseData = selectedDate ? getMoonPhaseData(selectedDate) : null;
+  const _todayMid = new Date(); _todayMid.setHours(0, 0, 0, 0);
+  const _selMid   = selectedDate ? new Date(selYear, selMonth, selDay, 0, 0, 0) : null;
+  const _selDaysDiff = _selMid ? Math.round((_selMid - _todayMid) / 864e5) : null;
   const withinForecastWindow = _selDaysDiff !== null ? (_selDaysDiff >= 0 && _selDaysDiff <= 10) : false;
   const withinPositionWindow = _selDaysDiff !== null ? (_selDaysDiff >= 0 && _selDaysDiff <= 10) : false;
 
@@ -218,14 +264,14 @@ export default function CalendarPage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/" className="nav-link-item">Home</a>
+          <a href="/home" className="nav-link-item">Home</a>
           <a href="/explore" className="nav-link-item">Explore</a>
           <a href="/calendar" className="nav-link-item active">Calendar</a>
           <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm">Login</button>
+          <button className="btn-warp btn-warp-sm" onClick={() => window.location.href = "/"}>Login</button>
         </div>
       </nav>
 
@@ -260,7 +306,11 @@ export default function CalendarPage() {
               <h1 className="font-headline fw-bold page-title mb-1">
                 {MONTH_NAMES[currentMonth]} {currentYear}
               </h1>
-              <p className="page-subtitle mb-0">Observational Cycle 42 // Solar Flux: Optimal</p>
+              <p className="page-subtitle mb-0">
+                {liveTime.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                {" // "}
+                {liveTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </p>
             </div>
             <div className="d-flex align-items-center gap-2 cal-nav-controls">
               <button className="nav-chevron-btn" onClick={handlePrevMonth}>
@@ -313,12 +363,13 @@ export default function CalendarPage() {
 
             {modal.type === "day" && (
               <>
-                <div className="d-flex justify-content-between align-items-start mb-4">
+                <div className="mb-4" style={{ position: "relative", textAlign: "center" }}>
                   <h2 className="font-headline fw-bold mb-0">
                     {MONTH_NAMES[selMonth]} {selDay}, {selYear}
                   </h2>
                   {moonPhaseData && (
-                    <div className="d-flex flex-column align-items-center gap-1">
+                    <div className="d-flex flex-column align-items-center gap-1"
+                      style={{ position: "absolute", right: 0, top: 0 }}>
                       <MoonPhaseVisual phase={moonPhaseData.phase} size={72} />
                       <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
                         {moonPhaseData.name}
@@ -341,6 +392,7 @@ export default function CalendarPage() {
                   <div className="row g-4">
 
                     <div className="col-12 col-md-6">
+                      <div className="mb-1"><WeatherIcon size={22} /></div>
                       <h4 className="font-headline fw-bold mb-2"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-tertiary)" }}>
                         WEATHER
@@ -367,6 +419,7 @@ export default function CalendarPage() {
                     </div>
 
                     <div className="col-12 col-md-3">
+                      <div className="mb-1"><SunIcon size={22} /></div>
                       <h4 className="font-headline fw-bold mb-2"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
                         SUN
@@ -383,6 +436,7 @@ export default function CalendarPage() {
                     </div>
 
                     <div className="col-12 col-md-3">
+                      <div className="mb-1"><MoonIcon size={22} /></div>
                       <h4 className="font-headline fw-bold mb-2"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
                         MOON
@@ -406,9 +460,10 @@ export default function CalendarPage() {
                       if (filtered.length === 0) return null;
                       return (
                         <div className="col-12">
+                          <div className="mb-1"><PlanetIcon size={22} /></div>
                           <h4 className="font-headline fw-bold mb-2"
                             style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-on-surface-variant)" }}>
-                            BODY POSITIONS AT NOON
+                            PLANET POSITIONS
                           </h4>
                           <div className="d-flex flex-wrap gap-4">
                             {filtered.map((row, i) => {

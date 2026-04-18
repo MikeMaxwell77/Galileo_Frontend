@@ -19,7 +19,7 @@ const SIGNALS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/" },
+  { label: "Home",      icon: "space_dashboard", path: "/home" },
   { label: "Explore",   icon: "explore",         path: "/explore", active: true },
   { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
   { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
@@ -98,8 +98,7 @@ export default function ExplorePage() {
   };
 
   const handleLogin = () => {
-    //console.log("Login was pressed")
-    setModal({type: "login", data:null})
+    window.location.href = "/";
   }
 
   const handleAccountSymbol = () => {
@@ -347,7 +346,7 @@ export default function ExplorePage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/"          className="nav-link-item">Home</a>
+          <a href="/home"      className="nav-link-item">Home</a>
           <a href="/explore"   className="nav-link-item active">Explore</a>
           <a href="/calendar"  className="nav-link-item">Calendar</a>
           <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
