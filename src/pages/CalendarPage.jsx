@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
+import "./CalendarPage.css";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 const NAV_ITEMS = [
   { label: "Home", icon: "space_dashboard", path: "/" },
@@ -13,72 +17,58 @@ const NAV_ITEMS = [
 ];
 
 export default function CalendarPage() {
+  const today = new Date();
 
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [calendarCells, setCalendarCells] = useState([]);
-  const [dateStore, setDateStore] = useState({ currentDate: new Date(), currentMonth: new Date().getMonth(), currentYear: new Date().getFullYear() })
-  const [reRenderCalendar, setReRenderCalendar] = useState(false);
+  const [modal, setModal] = useState({ type: null, data: null });
 
+  const buildCalendarCells = (month, year) => {
+    const cells = [];
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-  const compuateCalendarCells = (today, currentMonth, currentYear) => {
-    const newcalendarCells = [];
-
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-
-
-    // Fill previous month (inactive)
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-      newcalendarCells.push({
-        day: daysInPrevMonth - i,
-        variant: "inactive",
-      });
+      cells.push({ day: daysInPrevMonth - i, variant: "inactive" });
     }
 
-    // Fill current month
-    for (let d = 1; d <= daysInMonth; d++) {
-      const isToday = d === today.getDate();
+    const isCurrentMonthYear =
+      month === today.getMonth() && year === today.getFullYear();
 
-      newcalendarCells.push({
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push({
         day: d,
-        variant: isToday ? "today" : undefined,
+        variant: isCurrentMonthYear && d === today.getDate() ? "today" : undefined,
         events: [],
       });
     }
 
-
-    if (newcalendarCells.length > 0) setCalendarCells(newcalendarCells);
-  }
+    setCalendarCells(cells);
+  };
 
   const handleNextMonth = () => {
-    console.log("Next month pressed")
-    dateStore.currentMonth = dateStore.currentMonth + 1 % 11;
-    setDateStore(dateStore);
-    compuateCalendarCells(dateStore.currentDate, dateStore.currentMonth, dateStore.currentYear)
-  }
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
 
   const handlePrevMonth = () => {
-
-    console.log("Prev month pressed")
-  }
-
-  // Initalize the dates etc on load
-
-  useEffect(() => {
-    console.log(dateStore);
-    compuateCalendarCells(dateStore.currentDate, dateStore.currentMonth, dateStore.currentYear);
-
-  }, [])
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
 
   useEffect(() => {
-    setReRenderCalendar(false);
-  }, [reRenderCalendar])
-
-
-
-
+    buildCalendarCells(currentMonth, currentYear);
+  }, [currentMonth, currentYear]);
 
   return (
     <div className="page-root">
@@ -123,12 +113,18 @@ export default function CalendarPage() {
         <div className="page-content">
           <div className="d-flex justify-content-between align-items-end mb-4">
             <div>
-              <h1 className="font-headline fw-bold page-title mb-1">October 2024</h1>
+              <h1 className="font-headline fw-bold page-title mb-1">
+                {MONTH_NAMES[currentMonth]} {currentYear}
+              </h1>
               <p className="page-subtitle mb-0">Observational Cycle 42 // Solar Flux: Optimal</p>
             </div>
             <div className="d-flex align-items-center gap-2 cal-nav-controls">
-              <button className="nav-chevron-btn" onClick={() => handlePrevMonth()}><span className="material-symbols-outlined">chevron_left</span></button>
-              <button className="nav-chevron-btn" onClick={() => handleNextMonth()}><span className="material-symbols-outlined">chevron_right</span></button>
+              <button className="nav-chevron-btn" onClick={handlePrevMonth}>
+                <span className="material-symbols-outlined">chevron_left</span>
+              </button>
+              <button className="nav-chevron-btn" onClick={handleNextMonth}>
+                <span className="material-symbols-outlined">chevron_right</span>
+              </button>
             </div>
           </div>
 
@@ -139,15 +135,19 @@ export default function CalendarPage() {
               </div>
             ))}
             {calendarCells.map((cell, i) => {
-              if (cell.variant === "empty") return <div key={i} className="cal-cell empty" />;
               if (cell.variant === "inactive") return (
                 <div key={i} className="cal-cell inactive">
                   <span className="cal-day-num muted">{cell.day}</span>
                 </div>
               );
               return (
-                <div key={i} className={`cal-cell ${cell.variant === "today" ? "today" : ""}`}>
-                  <span className={`cal-day-num ${cell.variant === "today" ? "today-num" : cell.variant === "tertiary" ? "tertiary-num" : ""}`}>
+                <div
+                  key={i}
+                  className={`cal-cell ${cell.variant === "today" ? "today" : ""}`}
+                  onClick={() => setModal({ type: "day", data: { day: cell.day, month: currentMonth, year: currentYear } })}
+                  style={{ cursor: "pointer" }}
+                >
+                  <span className={`cal-day-num ${cell.variant === "today" ? "today-num" : ""}`}>
                     {cell.day}
                   </span>
                   {cell.events && cell.events.map((ev, j) => (
@@ -163,6 +163,28 @@ export default function CalendarPage() {
       <button className="fab-btn">
         <span className="material-symbols-outlined" style={{ fontSize: "1.75rem", color: "var(--clr-on-primary)" }}>rocket_launch</span>
       </button>
+
+      {modal.type && (
+        <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+
+            {modal.type === "day" && (
+              <>
+                <h2 className="font-headline fw-bold">
+                  {MONTH_NAMES[modal.data.month]} {modal.data.day}, {modal.data.year}
+                </h2>
+                <p className="page-subtitle">No events scheduled. — content coming soon.</p>
+                <div className="d-flex gap-2 mt-3">
+                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
