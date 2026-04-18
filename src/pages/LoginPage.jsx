@@ -22,17 +22,13 @@ export default function LoginPage() {
     try {
       if (activeTab === "login") {
         // Login
-        const response = await axios.post(`${AuthenticationService.AUTH_BACKEND_URL}/login`, {
-          email,
-          password,
-          });
+        const token = await AuthenticationService.Login(email, password)
 
-        const token = response.data; // we get a token from the backend
         if (!token || token.split(".").length !== 3) {
               throw new Error("Invalid token format");
         }
 
-        AuthenticationService.Login(token);
+        AuthenticationService.LoginToken(token);
         setMessage("Login Succesful");
         navigate("/home");
       }
@@ -41,6 +37,7 @@ export default function LoginPage() {
         setMessage("Registration Succesful");
       }
     } catch (error) {
+      console.error("AUTH ERROR:", error.response?.data || error.message);
       if (activeTab === "login") {
         setMessage("Login failed. Please check your credentials.");
       } else {
