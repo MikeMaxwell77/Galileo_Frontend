@@ -352,8 +352,8 @@ export default function ExplorePage() {
           <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
+          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>}
           <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
-          
         </div>
       </nav>
 

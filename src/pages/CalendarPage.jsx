@@ -4,6 +4,7 @@ import "./CalendarPage.css";
 import { useGeoLocation } from "../components/geoLocation/GeoLocation";
 import { AstronomyBodiesInterface } from "../astronomyAPI/BodiesApi";
 import { WeatherService } from "../GalileoBackendServices/WeatherService";
+import AuthenticationService from "../auth/AuthenticationService";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -133,6 +134,11 @@ export default function CalendarPage() {
   const [dayData,       setDayData]       = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
   const [bodyPositions, setBodyPositions] = useState(null);
   const [liveTime,      setLiveTime]      = useState(new Date());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(AuthenticationService.isAuthenticated());
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setLiveTime(new Date()), 1000);
@@ -272,6 +278,7 @@ export default function CalendarPage() {
           <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
+          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>}
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
         </div>
       </nav>

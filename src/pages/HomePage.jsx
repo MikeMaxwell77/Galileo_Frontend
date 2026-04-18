@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AuthenticationService from "../auth/AuthenticationService";
 
 const BOOKMARKS = [
   { icon: "database", iconBg: "rgba(186,146,250,0.1)", iconColor: "var(--clr-secondary)", title: "AI Model Archive 2024",  desc: "The largest curated collection of open-source LLMs and training datasets for cosmic simulation.", tag: "Science / AI" },
@@ -55,6 +57,11 @@ const NAV_ITEMS = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(AuthenticationService.isAuthenticated());
+  }, []);
 
   return (
     <div className="page-root">
@@ -71,6 +78,7 @@ export default function HomePage() {
           <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
+          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>}
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
         </div>
       </nav>
