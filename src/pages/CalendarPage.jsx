@@ -19,18 +19,49 @@ const NAV_ITEMS = [
   { label: "Account",   icon: "person",          path: "/account" },
 ];
 
-const getMoonPhase = (date) => {
+const getMoonPhaseData = (date) => {
   const knownNewMoon = new Date("2000-01-06T18:14:00Z").getTime();
   const lunarCycle = 29.530588853 * 24 * 60 * 60 * 1000;
   const pct = ((date.getTime() - knownNewMoon) % lunarCycle + lunarCycle) % lunarCycle / lunarCycle;
-  if (pct < 0.033 || pct >= 0.967) return "New Moon";
-  if (pct < 0.25)  return "Waxing Crescent";
-  if (pct < 0.283) return "First Quarter";
-  if (pct < 0.5)   return "Waxing Gibbous";
-  if (pct < 0.533) return "Full Moon";
-  if (pct < 0.75)  return "Waning Gibbous";
-  if (pct < 0.783) return "Last Quarter";
-  return "Waning Crescent";
+  let name;
+  if (pct < 0.033 || pct >= 0.967) name = "New Moon";
+  else if (pct < 0.25)  name = "Waxing Crescent";
+  else if (pct < 0.283) name = "First Quarter";
+  else if (pct < 0.5)   name = "Waxing Gibbous";
+  else if (pct < 0.533) name = "Full Moon";
+  else if (pct < 0.75)  name = "Waning Gibbous";
+  else if (pct < 0.783) name = "Last Quarter";
+  else name = "Waning Crescent";
+  return { phase: pct, name };
+};
+
+// SVG moon phase disc — phase is 0–1 (0=new, 0.5=full, 1=new)
+const MoonPhaseVisual = ({ phase, size = 72 }) => {
+  const r = (size - 4) / 2;
+  // Illumination fraction via standard formula
+  const k = (1 - Math.cos(2 * Math.PI * phase)) / 2;
+  const isWaxing = phase < 0.5;
+
+  let litPath = null;
+  if (k >= 0.99) {
+    litPath = "full";
+  } else if (k > 0.01) {
+    // Terminator ellipse x-radius: 0 at quarter, r at new/full
+    const tRx = r * Math.abs(2 * k - 1);
+    // Which side is the lit semicircle on (sweep=1 → right/clockwise, sweep=0 → left/ccw)
+    const halfSweep = isWaxing ? 1 : 0;
+    // Terminator direction flips at gibbous vs crescent, and again at waning vs waxing
+    const tSweep = isWaxing ? (k >= 0.5 ? 1 : 0) : (k >= 0.5 ? 0 : 1);
+    litPath = `M 0,${-r} A ${r},${r} 0 1,${halfSweep} 0,${r} A ${tRx},${r} 0 1,${tSweep} 0,${-r} Z`;
+  }
+
+  return (
+    <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`}>
+      <circle r={r} fill="rgba(10,8,20,0.95)" stroke="rgba(255,240,200,0.25)" strokeWidth="1" />
+      {litPath === "full" && <circle r={r} fill="rgba(255,240,200,0.9)" />}
+      {litPath && litPath !== "full" && <path d={litPath} fill="rgba(255,240,200,0.9)" />}
+    </svg>
+  );
 };
 
 const formatTime = (isoString) => {
@@ -92,9 +123,14 @@ export default function CalendarPage() {
 
     setDayData({ loading: true, weather: null, sunEvents: null, moonEvents: null });
 
+    const daysDiff = Math.floor((date - new Date()) / (1000 * 60 * 60 * 24));
+    const withinForecastWindow = daysDiff >= -1 && daysDiff <= 10;
+
     const fetchAll = async () => {
       const [weatherResult, sunResult, moonResult] = await Promise.allSettled([
-        WeatherService.FetchForecastForDate({ latitude: geoData.latitude, longitude: geoData.longitude, date }),
+        withinForecastWindow
+          ? WeatherService.FetchForecastForDate({ latitude: geoData.latitude, longitude: geoData.longitude, date })
+          : Promise.resolve(null),
         AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "sun",  latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
         AstronomyBodiesInterface.FetchEventsOnDate({ bodyid: "moon", latitude: geoData.latitude, longitude: geoData.longitude, elevation: geoData.elevation ?? 0, date }),
       ]);
@@ -111,8 +147,11 @@ export default function CalendarPage() {
   }, [modal.data]);
 
   const { day: selDay, month: selMonth, year: selYear } = modal.data ?? {};
-  const selectedDate = modal.data ? new Date(selYear, selMonth, selDay) : null;
-  const moonPhase    = selectedDate ? getMoonPhase(selectedDate) : null;
+  const selectedDate        = modal.data ? new Date(selYear, selMonth, selDay) : null;
+  const moonPhaseData       = selectedDate ? getMoonPhaseData(selectedDate) : null;
+  const withinForecastWindow = selectedDate
+    ? (() => { const d = Math.floor((selectedDate - new Date()) / 864e5); return d >= -1 && d <= 10; })()
+    : false;
 
   const sunEvents  = dayData.sunEvents?.data?.events  ?? [];
   const moonEvents = dayData.moonEvents?.data?.events ?? [];
@@ -221,7 +260,14 @@ export default function CalendarPage() {
                   <h2 className="font-headline fw-bold mb-0">
                     {MONTH_NAMES[selMonth]} {selDay}, {selYear}
                   </h2>
-                  <span className="page-subtitle mb-0" style={{ textAlign: "right" }}>{moonPhase}</span>
+                  {moonPhaseData && (
+                    <div className="d-flex flex-column align-items-center gap-1">
+                      <MoonPhaseVisual phase={moonPhaseData.phase} size={72} />
+                      <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+                        {moonPhaseData.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {!hasGeoData && (
@@ -256,7 +302,9 @@ export default function CalendarPage() {
                         ))
                       ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
-                          Unavailable — weather.gov covers US locations only.
+                          {dayData.weather === null && !withinForecastWindow
+                            ? "Weather forecast only available within 10 days."
+                            : "Unavailable — weather.gov covers US locations only."}
                         </p>
                       )}
                     </div>
