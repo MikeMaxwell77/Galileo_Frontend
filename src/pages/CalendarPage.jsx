@@ -1,49 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const CALENDAR_CELLS = [
-  { day: 29, variant: "inactive" },
-  { day: 30, variant: "inactive" },
-  { day: 1,  events: [] },
-  { day: 2,  events: [{ text: "Interstellar Research Paper on Quantum Foams", color: "primary" }] },
-  { day: 3,  variant: "tertiary", events: [{ text: "Warning: Star System Deprecation", color: "tertiary" }] },
-  { day: 4,  events: [] },
-  { day: 5,  events: [] },
-  { day: 6,  events: [] },
-  { day: 7,  events: [] },
-  { day: 8,  variant: "today", events: [{ text: "The Architecture of Void-based Data Structures and Long-form Storage", color: "secondary" }] },
-  { day: 9,  events: [] },
-  { day: 10, events: [{ text: "System Snapshot #9042", color: "neutral" }] },
-  { day: 11, events: [] },
-  { day: 12, events: [] },
-  { day: 13, events: [] },
-  { day: 14, events: [] },
-  { day: 15, events: [] },
-  { day: 16, events: [{ text: "Galaxy Cluster Mapping", color: "primary" }, { text: "Nebula Color Palettes", color: "secondary" }] },
-  { day: 17, events: [] },
-  { day: 18, events: [] },
-  { day: 19, events: [] },
-  ...Array(14).fill({ variant: "empty" }),
-];
+
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/" },
-  { label: "Explore",   icon: "explore",         path: "/explore" },
-  { label: "Calendar",  icon: "calendar_month",  path: "/calendar", active: true },
-  { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
-  { label: "Account",   icon: "person",          path: "/account" },
+  { label: "Home", icon: "space_dashboard", path: "/" },
+  { label: "Explore", icon: "explore", path: "/explore" },
+  { label: "Calendar", icon: "calendar_month", path: "/calendar", active: true },
+  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
+  { label: "Account", icon: "person", path: "/account" },
 ];
 
 export default function CalendarPage() {
+
+  const [calendarCells, setCalendarCells] = useState([]);
+  const [dateStore, setDateStore] = useState({ currentDate: new Date(), currentMonth: new Date().getMonth(), currentYear: new Date().getFullYear() })
+  const [reRenderCalendar, setReRenderCalendar] = useState(false);
+
+
+  const compuateCalendarCells = (today, currentMonth, currentYear) => {
+    const newcalendarCells = [];
+
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+
+
+    // Fill previous month (inactive)
+    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+      newcalendarCells.push({
+        day: daysInPrevMonth - i,
+        variant: "inactive",
+      });
+    }
+
+    // Fill current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = d === today.getDate();
+
+      newcalendarCells.push({
+        day: d,
+        variant: isToday ? "today" : undefined,
+        events: [],
+      });
+    }
+
+
+    if (newcalendarCells.length > 0) setCalendarCells(newcalendarCells);
+  }
+
+  const handleNextMonth = () => {
+    console.log("Next month pressed")
+    dateStore.currentMonth = dateStore.currentMonth + 1 % 11;
+    setDateStore(dateStore);
+    compuateCalendarCells(dateStore.currentDate, dateStore.currentMonth, dateStore.currentYear)
+  }
+
+  const handlePrevMonth = () => {
+
+    console.log("Prev month pressed")
+  }
+
+  // Initalize the dates etc on load
+
+  useEffect(() => {
+    console.log(dateStore);
+    compuateCalendarCells(dateStore.currentDate, dateStore.currentMonth, dateStore.currentYear);
+
+  }, [])
+
+  useEffect(() => {
+    setReRenderCalendar(false);
+  }, [reRenderCalendar])
+
+
+
+
+
   return (
     <div className="page-root">
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/"          className="nav-link-item">Home</a>
-          <a href="/explore"   className="nav-link-item">Explore</a>
-          <a href="/calendar"  className="nav-link-item active">Calendar</a>
+          <a href="/" className="nav-link-item">Home</a>
+          <a href="/explore" className="nav-link-item">Explore</a>
+          <a href="/calendar" className="nav-link-item active">Calendar</a>
           <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
         </div>
         <div className="d-flex align-items-center gap-3">
@@ -71,7 +115,7 @@ export default function CalendarPage() {
         </div>
         <div className="sidebar-footer d-flex flex-column gap-1">
           <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-          <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
+          <a href="/support" className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
         </div>
       </aside>
 
@@ -83,8 +127,8 @@ export default function CalendarPage() {
               <p className="page-subtitle mb-0">Observational Cycle 42 // Solar Flux: Optimal</p>
             </div>
             <div className="d-flex align-items-center gap-2 cal-nav-controls">
-              <button className="nav-chevron-btn"><span className="material-symbols-outlined">chevron_left</span></button>
-              <button className="nav-chevron-btn"><span className="material-symbols-outlined">chevron_right</span></button>
+              <button className="nav-chevron-btn" onClick={() => handlePrevMonth()}><span className="material-symbols-outlined">chevron_left</span></button>
+              <button className="nav-chevron-btn" onClick={() => handleNextMonth()}><span className="material-symbols-outlined">chevron_right</span></button>
             </div>
           </div>
 
@@ -94,7 +138,7 @@ export default function CalendarPage() {
                 {day}
               </div>
             ))}
-            {CALENDAR_CELLS.map((cell, i) => {
+            {calendarCells.map((cell, i) => {
               if (cell.variant === "empty") return <div key={i} className="cal-cell empty" />;
               if (cell.variant === "inactive") return (
                 <div key={i} className="cal-cell inactive">
