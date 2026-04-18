@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const OBSERVERS = [
   { handle: "@orion_9",     src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDMcqcfY0SVxutOYgf1WcI-zjup3MwZLq9Lq8C5WQ4Aly46jrtTz4OBwOTuGcef-jvOeUUq7LXbBdys129jSfps55B4VRnc1VipbvFE6BrPAyt8_eK3NrV36WfafllZ5J5Z-_ceekn69oEMt8UUiiA7_X23Ft18avPm1gNAvoflujnbIWvqZu0nNpNfm4Cm1PikxZao65SUnI4ioctrfg92-dmrrDjh2NFpSPrYIedlKpPr9ACmBCkO8H_hfbGv9qC9i6noq1Mx158" },
@@ -31,10 +32,10 @@ export default function AccountPage() {
         <div className="d-flex align-items-center gap-4">
           <span className="galileo-logo font-headline fw-bold fs-4">Galileo</span>
           <div className="d-none d-md-flex align-items-center gap-4">
-            <a href="/"          className="nav-link-item">Home</a>
-            <a href="/explore"   className="nav-link-item">Explore</a>
-            <a href="/calendar"  className="nav-link-item">Calendar</a>
-            <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
+            <Link to="/home"      className="nav-link-item">Home</Link>
+            <Link to="/explore"   className="nav-link-item">Explore</Link>
+            <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+            <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
           </div>
         </div>
         <div className="d-flex align-items-center gap-3">
@@ -51,10 +52,10 @@ export default function AccountPage() {
           <div className="sidebar-section-label" style={{ color: "var(--clr-primary)" }}>Main Deck</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4" style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.75rem" }}>
@@ -62,8 +63,8 @@ export default function AccountPage() {
           </button>
         </div>
         <div className="sidebar-footer d-flex flex-column gap-1" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
-          <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-          <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
+          <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
+          <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
         </div>
       </aside>
 

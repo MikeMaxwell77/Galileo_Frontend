@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
@@ -98,7 +98,7 @@ export default function ExplorePage() {
   };
 
   const handleLogin = () => {
-    window.location.href = "/";
+    navigate("/");
   }
 
   const handleAccountSymbol = () => {
@@ -346,10 +346,10 @@ export default function ExplorePage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/home"      className="nav-link-item">Home</a>
-          <a href="/explore"   className="nav-link-item active">Explore</a>
-          <a href="/calendar"  className="nav-link-item">Calendar</a>
-          <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
+          <Link to="/home"      className="nav-link-item">Home</Link>
+          <Link to="/explore"   className="nav-link-item active">Explore</Link>
+          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
@@ -364,16 +364,16 @@ export default function ExplorePage() {
           <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <div className="sidebar-section-label mt-4">System</div>
           <nav className="d-flex flex-column gap-1">
-            <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-            <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
+            <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
+            <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
           </nav>
         </div>
         <div className="sidebar-footer">

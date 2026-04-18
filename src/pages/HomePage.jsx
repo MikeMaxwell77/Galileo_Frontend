@@ -35,6 +35,7 @@ const NAV_ITEMS = [
 
 /* NASA APOD fetch — disabled for now, re-enable when ready
 import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
   const [apodImgs, setApodImgs] = useState([]);
   useEffect(() => {
     const key = import.meta.env.VITE_NASA_API_KEY ?? "DEMO_KEY";
@@ -53,6 +54,7 @@ import { useState, useEffect } from "react";
 */
 
 export default function HomePage() {
+  const navigate = useNavigate();
 
   return (
     <div className="page-root">
@@ -63,14 +65,14 @@ export default function HomePage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/home"      className="nav-link-item active">Home</a>
-          <a href="/explore"   className="nav-link-item">Explore</a>
-          <a href="/calendar"  className="nav-link-item">Calendar</a>
-          <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
+          <Link to="/home"      className="nav-link-item active">Home</Link>
+          <Link to="/explore"   className="nav-link-item">Explore</Link>
+          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm" onClick={() => window.location.href = "/"}>Login</button>
+          <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>
         </div>
       </nav>
 
@@ -80,10 +82,10 @@ export default function HomePage() {
           <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4"
@@ -92,8 +94,8 @@ export default function HomePage() {
           </button>
         </div>
         <div className="sidebar-footer d-flex flex-column gap-1" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
-          <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-          <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
+          <Link to="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</Link>
+          <Link to="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</Link>
         </div>
       </aside>
 
