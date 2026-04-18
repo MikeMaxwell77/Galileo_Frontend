@@ -95,10 +95,9 @@ export default function HomePage() {
               </Link>
             ))}
           </nav>
-          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4"
-            style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.75rem" }}>
-            New Observation
-          </button>
+        </div>
+        <div className="sidebar-footer">
+          <button className="sidebar-new-obs-btn">New Observation</button>
         </div>
       </aside>
 

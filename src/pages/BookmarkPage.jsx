@@ -211,13 +211,16 @@ export default function BookmarksPage() {
           <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
           <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-              <span className="material-symbols-outlined">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+                <span className="material-symbols-outlined">{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="sidebar-footer">
+          <button className="sidebar-new-obs-btn">New Observation</button>
         </div>
       </aside>
 

@@ -306,8 +306,8 @@ export default function CalendarPage() {
   const withinForecastWindow = _selDaysDiff !== null ? (_selDaysDiff >= 0 && _selDaysDiff <= 10) : false;
   const withinPositionWindow = _selDaysDiff !== null ? (_selDaysDiff >= 0 && _selDaysDiff <= 10) : false;
 
-  const sunEvents  = dayData.sunEvents?.data?.events  ?? [];
-  const moonEvents = dayData.moonEvents?.data?.events ?? [];
+  const sunEvents  = dayData.sunEvents?.data?.rows?.[0]?.events  ?? [];
+  const moonEvents = dayData.moonEvents?.data?.rows?.[0]?.events ?? [];
 
   return (
     <div className="page-root">
@@ -329,11 +329,6 @@ export default function CalendarPage() {
         <div className="sidebar-inner">
           <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
           <div className="sidebar-section-label">Navigation</div>
-          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mb-3"
-            style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.8rem" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>add</span>
-            New Observation
-          </button>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
               <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
@@ -342,6 +337,9 @@ export default function CalendarPage() {
               </Link>
             ))}
           </nav>
+        </div>
+        <div className="sidebar-footer">
+          <button className="sidebar-new-obs-btn">New Observation</button>
         </div>
       </aside>
 
@@ -354,7 +352,7 @@ export default function CalendarPage() {
               </h1>
               <p className="page-subtitle mb-0">
                 {liveTime.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-                {" // "}
+                {" || "}
                 {liveTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </p>
             </div>

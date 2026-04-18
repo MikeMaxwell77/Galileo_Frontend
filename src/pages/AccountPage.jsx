@@ -29,27 +29,22 @@ export default function AccountPage() {
   return (
     <div className="page-root">
       <nav className="top-nav">
-        <div className="d-flex align-items-center gap-4">
-          <span className="galileo-logo font-headline fw-bold fs-4">Galileo</span>
-          <div className="d-none d-md-flex align-items-center gap-4">
-            <Link to="/home"      className="nav-link-item">Home</Link>
-            <Link to="/explore"   className="nav-link-item">Explore</Link>
-            <Link to="/calendar"  className="nav-link-item">Calendar</Link>
-            <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
-          </div>
+        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
+        <div className="d-none d-md-flex align-items-center gap-4">
+          <Link to="/home"      className="nav-link-item">Home</Link>
+          <Link to="/explore"   className="nav-link-item">Explore</Link>
+          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
-          <div className="d-none d-sm-block position-relative">
-            <input className="galileo-input form-control" style={{ borderRadius: "999px", paddingRight: "2.5rem", width: "220px" }} type="text" placeholder="Search cosmos..." />
-            <span className="material-symbols-outlined" style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--clr-on-surface-variant)", fontSize: "1.1rem", pointerEvents: "none" }}>search</span>
-          </div>
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
         </div>
       </nav>
 
       <aside className="sidebar d-none d-lg-flex flex-column">
         <div className="sidebar-inner">
-          <div className="sidebar-section-label" style={{ color: "var(--clr-primary)" }}>Main Deck</div>
+          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
+          <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
               <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
@@ -58,9 +53,9 @@ export default function AccountPage() {
               </Link>
             ))}
           </nav>
-          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4" style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.75rem" }}>
-            New Observation
-          </button>
+        </div>
+        <div className="sidebar-footer">
+          <button className="sidebar-new-obs-btn">New Observation</button>
         </div>
       </aside>
 
