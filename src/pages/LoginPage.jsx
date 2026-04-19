@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
@@ -48,6 +48,13 @@ export default function LoginPage() {
     }
   };
 
+  useEffect(()=>{
+    const Authenticated = AuthenticationService.isAuthenticated();
+
+    if (Authenticated) {
+      navigate("/home");
+    }
+  }, [])
 
   return (
     <div className="bg-nebula" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
