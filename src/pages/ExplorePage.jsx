@@ -8,6 +8,8 @@ import AuthenticationService from "../auth/AuthenticationService";
 
 import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
 import BookmarkService from "../GalileoBackendServices/BookmarksService";
+import { SatelliteInterface } from "../GalileoBackendServices/nasaSatelliteService.js";
+
 
 
 
@@ -42,7 +44,9 @@ export default function ExplorePage() {
   const [loginFailed, setLoginFailed] = useState(false);
   const [myBookmarks, setMyBookmarks] = useState([]);
   const bookmarkedSet = useMemo(() => {
-    return new Set(myBookmarks.map(bm => bm.API_identifier));
+    const set = new Set(myBookmarks.map(bm => `${bm.whichAPI}:${bm.API_identifier}`));
+    console.log("Bookmark set contents:", set);
+    return set;
   }, [myBookmarks]);
 
   const [reloadMWBStore, setReloadMWBStore] = useState(true);
@@ -56,39 +60,71 @@ export default function ExplorePage() {
     data: null
   })
 
+  // nasa API for satallites
+  const [satellites, setSatellites] = useState([]);
 
-  const toggleBookmark = async (sig) => {
-    if (!AuthenticationService.isAuthenticated()) {
-      setModal({ type: "login", data: null });
-      return;
-    }
+  const mapSatelliteToEventObj = (sat) => ({
+    id: sat.Id,
+    title: sat.Name,
+    source: "SSC",
+    desc: `Satellite · ${sat.StartTime?.slice(0, 4) ?? "?"} – ${sat.EndTime?.slice(0, 4) ?? "present"}`,
+    icon: "satellite_alt",
+    iconColor: "var(--clr-tertiary)",
+    glowColor: "rgba(255,231,146,0.05)",
+    tags: [{ label: "Satellite", color: "var(--clr-tertiary)", border: "rgba(255,231,146,0.2)" }],
+    scanned: sat.StartTime,
+    equatorial_pos: null,
+  });
 
-
-    const isCurrentlySaved = bookmarkedSet.has(sig.id);
-    const savedBookmark = myBookmarks.find(
-      bm => bm.API_identifier === sig.id
-    );
-
-    console.log(sig)
-
-    try {
-      if (isCurrentlySaved && savedBookmark) {
-        await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
-      } else {
-        await BookmarkService.CreateNewBookmark({
-          objectAPIIdentifier: sig.id,
-          displayName: sig.title,
-          latitude: geoData.latitude,
-          longitude: geoData.longitude
-        });
+  
+  
+  useEffect(() => {
+    console.log("Satelite use effect fired")
+    const loadSatellites = async () => {
+      try {
+        const res = await SatelliteInterface.FetchAllSatellites();
+        console.log("Satellites loaded:", res.length);     // does this fire at all?
+        console.log("Sample:", res[0]);
+        const mapped = res.map(mapSatelliteToEventObj);
+        console.log("Mapped satellites:", mapped.length);
+        console.log("Sample mapped satellite:", mapped[0]);
+        setSatellites(mapped);
+      } catch (err) {
+        console.error("Failed to load satellites", err);
       }
+    };
+    loadSatellites();
+  }, []);
 
-      
-      await loadBookmarks();
-    } catch (err) {
-      console.error("Bookmark failed", err);
+const toggleBookmark = async (sig) => {
+  if (!AuthenticationService.isAuthenticated()) {
+    setModal({ type: "login", data: null });
+    return;
+  }
+
+  const bookmarkKey = `${sig.source}:${sig.id}`;
+  const isCurrentlySaved = bookmarkedSet.has(bookmarkKey);
+  const savedBookmark = myBookmarks.find(
+    bm => `${bm.whichAPI}:${bm.API_identifier}` === bookmarkKey
+  );
+
+  try {
+    if (isCurrentlySaved && savedBookmark) {
+      await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
+    } else {
+      await BookmarkService.CreateNewBookmark({
+        objectAPIIdentifier: sig.id,
+        whichAPI: sig.source,
+        displayName: sig.title,        
+        latitude: geoData.latitude,
+        longitude: geoData.longitude
+      });
     }
-  };
+    await loadBookmarks();
+  } catch (err) {
+    console.error("Bookmark failed", err);
+  }
+};
 
   const handleManualSubmit = (lat, long, elev) => {
     setManualLocation(lat, long, elev);
@@ -145,6 +181,7 @@ export default function ExplorePage() {
 
   const mapAstronomySearchResToEventObj = (obj) => {
     return {
+      source: "AstronomyAPI",
       id: obj.id,
       title: obj.name,
       desc: `${obj.type.name} in ${obj.position.constellation.name ? obj.position.constellation.name : "n/a"}`,
@@ -189,6 +226,7 @@ export default function ExplorePage() {
 
   const mapAstronomyBoidesResToEventObj = (obj) => {
     return {
+      source: "AstronomyAPI",
       id: obj.entry.id,
       title: obj.entry.name,
       searchobj: true,
@@ -214,6 +252,7 @@ export default function ExplorePage() {
   useEffect(() => {
     if (!query) return;
     if (!events) setLoading(true);
+    if (!debouncedQuery) return;
     
 
     const currentRequest = ++requestIdRef.current;
@@ -240,9 +279,16 @@ export default function ExplorePage() {
           );
         }
 
-        const combined = [...mapped, ...milkyMatches]
+        const satMatches = satellites.filter(
+          sat => normalizeString(sat.title).includes(normalizeString(debouncedQuery))
+        );
 
+        const combined = [...mapped, ...milkyMatches, ...satMatches];
+        console.log("satellites state at search time:", satellites.length);
+        console.log("query:", debouncedQuery);
+        console.log("satMatches:", satMatches);
         setEvents(combined);
+
         //console.log(combined);
       } catch (error) {
         console.error("Search for object api request failed:", error);
@@ -256,7 +302,7 @@ export default function ExplorePage() {
 
     searchForObjects();
 
-  }, [debouncedQuery])
+  }, [debouncedQuery, satellites])
 
   useEffect(() => {
     // Will only be possible if the user has their location shared
@@ -325,6 +371,7 @@ export default function ExplorePage() {
     try {
       const res = await BookmarkService.GetAuthUserBookmarks();
       console.log(res);
+      console.log("First Bookmark:", res?.[0]);
       if (res) setMyBookmarks(res);
 
     } catch (error) {
@@ -414,7 +461,7 @@ export default function ExplorePage() {
               <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
                 <ExplorePageEvent
                   data={sig}
-                  isSaved={bookmarkedSet.has(sig.id)}
+                  isSaved={bookmarkedSet.has(`${sig.source}:${sig.id}`)}
                   onToggleBookmark={toggleBookmark}
                   onOpen={()=> setModal({type:"event", data:sig})}
                 />
@@ -457,22 +504,30 @@ export default function ExplorePage() {
 
 
                 <p><strong>Scanned:</strong> {modal.data.scanned}</p>
+
+                {/*Guard for satellites which have no equatorial position */}
+                {modal.data.equatorial_pos ? (
                 <div>
                   <h4><strong>Equatorial Position Data</strong></h4>
                   <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
                   <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
                 </div>
+                ) : (
+                  <div>
+                    <h4><strong>Orbital Object</strong></h4>
+                    <p>Source: NASA Satellite Situation Center</p>
+                    <p>Trajectory data available from {modal.data.scanned?.slice(0, 10)}</p>
+                  </div>
+                )}
 
                 <div className="d-flex gap-2 mt-3">
-                  <button
-                    className="btn-warp"
-                    onClick={() => setModal({ type: null, data: null })}
-                  >
+                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>
                     Cancel | Close
                   </button>
                 </div>
               </>
             )}
+
 
             {/* LOCATION MODAL */}
             {modal.type === "location" && (
