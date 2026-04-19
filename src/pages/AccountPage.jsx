@@ -30,7 +30,8 @@ export default function AccountPage() {
       e.preventDefault();
       setLoading(true);
       try {
-          // Replace with your actual settings endpoint
+          // send to backend
+          //console.log("Updating with data:", updateData);
           await axios.put(`${API_BASE_URL}/account/me`, updateData, {
               headers: AuthenticationService.getAuthHeader(),
           });
@@ -71,7 +72,7 @@ export default function AccountPage() {
       });
       setAccount(res.data);
     } catch (err) {
-      if (err.response?.status === 401) navigate("/login");
+      if (err.response?.status === 401) navigate("/");
     } finally {
       setLoading(false);
     }
@@ -118,7 +119,7 @@ export default function AccountPage() {
           <span className="galileo-logo font-headline fw-bold fs-4">Galileo</span>
         </div>
         <div className="d-flex align-items-center gap-3">
-          <button onClick={() => { AuthenticationService.logout(); navigate("/login"); }} className="icon-btn">
+          <button onClick={() => { AuthenticationService.Logout(); }} className="icon-btn">
             <span className="material-symbols-outlined">logout</span>
           </button>
         </div>
@@ -236,7 +237,7 @@ export default function AccountPage() {
                   <p className="danger-text mb-0">Account termination and data wipe.</p>
                 </div>
                 <div className="d-flex gap-3">
-                  <button onClick={() => { AuthenticationService.logout(); navigate("/login"); }} className="btn-sign-out">
+                  <button onClick={() => { AuthenticationService.Logout(); }} className="btn-sign-out">
                       Sign Out
                   </button>
                   <button className=" py-1 px-3" onClick={() => setShowModal(true)}>
@@ -245,8 +246,7 @@ export default function AccountPage() {
                   <button onClick={async () => {
                     if(window.confirm("Erase Node?")) {
                        await axios.delete(`${API_BASE_URL}/account/me`, { headers: AuthenticationService.getAuthHeader() });
-                       AuthenticationService.logout();
-                       navigate("/login");
+                       AuthenticationService.Logout();
                     }
                   }} className="btn-delete-node">Delete Node</button>
                 </div>
