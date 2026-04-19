@@ -10,6 +10,8 @@ const BookmarkService = {
 
     CreateNewBookmark : async ({  
             objectAPIIdentifier, 
+            whichAPI,
+            displayName,
             latitude, 
             longitude 
     }) => {
@@ -20,7 +22,8 @@ const BookmarkService = {
         try {
             const response = await axios.post(BOOKMARK_BACKEND_URL, {
                 accountID: userID,
-                whichAPI: "AstronomyAPI",
+                whichAPI: whichAPI,
+                displayName: displayName,
                 API_identifier: objectAPIIdentifier,
                 timestamp: new Date().getTime(),
                 latitude: latitude,
@@ -68,6 +71,23 @@ const BookmarkService = {
             return response.data;
         } catch (error) {
             console.error("Fetch user bookmarks error:", error.response?.data || error.message);
+            throw error;
+        }
+
+    },
+    DeleteBookmarkByID: async (bookmarkID) => {
+        if (!AuthenticationService.isAuthenticated()) return;
+
+        try {
+            const response = await axios.delete(`${BOOKMARK_BACKEND_URL}/${bookmarkID}`,
+                {
+                    headers: AuthenticationService.getAuthHeader()
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            console.error("delete user bookmark error:", error.response?.data || error.message);
             throw error;
         }
 

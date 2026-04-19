@@ -1,0 +1,2 @@
+export const GALILEO_BACKEND_ROOT = import.meta.env.VITE_GALILEO_BACKEND_API_ROUTE;
+export const GALILEO_BACKEND_SEARCH_ACCOUNT = `${GALILEO_BACKEND_ROOT}/accounts/search`;

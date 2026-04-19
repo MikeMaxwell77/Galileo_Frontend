@@ -1,3 +1,7 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthenticationService from "../auth/AuthenticationService";
+
 const BOOKMARKS = [
   { icon: "database", iconBg: "rgba(186,146,250,0.1)", iconColor: "var(--clr-secondary)", title: "AI Model Archive 2024",  desc: "The largest curated collection of open-source LLMs and training datasets for cosmic simulation.", tag: "Science / AI" },
   { icon: "palette",  iconBg: "rgba(255,231,146,0.1)", iconColor: "var(--clr-tertiary)",  title: "Nebula Design Assets",   desc: "High-resolution procedural texture maps for celestial rendering and UI backgrounds.", tag: "Design / Assets" },
@@ -11,6 +15,13 @@ const COLLECTIONS = [
     imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDJpbcylIgwTzEd01l4X9XqQlRoK_K6C1FbDVzKiU6XX-AYLNf1QBX8it6yj5x0vVnZ1uyAb200aqHKLHyxbrMueObV5CYzbm89YE5u97MzkbTroLHfTqX1pTp2fSo9Bw4cGcspgdBBayyNLAne0IWxEVsfEiNn2JdUCBEePuUwPDd8qWOKFDwwxrM7LTUBOsXjWFLWuu8ujFRdm9My4wf4V4Dr4hACsYN3mMrRywlpKvHZUpcjFX5r-BJBSW4-UI9jfq3lW-ZM1dg", "https://lh3.googleusercontent.com/aida-public/AB6AXuAMOmjkMyNEJPmEPSFR37yoEQxLRQisrsRf8CQO6nk4SzT7wz4bvpdJ3rC6CFid87cHvjIrjv-4__oM1wcgp0LLButPKhI1GtArBWY-pLnmZDxG1otyGVbAwvsgsI8Qt7QjrTTLViK_dZLnCQZTyv6ULgoPBBu7y9K4hrToXvAETw4ZFANtJ40q1aoO0sY4wdDjBbBWbBB12X2jFQYbbokGpBgPUUgSxJPlEYM8LCW4up7I4c70JLxQHrV5E6BKlpvQXG8UZNOu-HY"] },
 ];
 
+/* NASA APOD — disabled for now, re-enable when ready
+const COLLECTION_META = [
+  { title: "Interstellar Physics", subtitle: "12 Transmissions • Science Archive", overlayColor: "rgba(224,142,254,0.2)", titleHoverColor: "var(--clr-primary)" },
+  { title: "Aesthetic Archetypes", subtitle: "28 Transmissions • Design Research", overlayColor: "rgba(186,146,250,0.2)", titleHoverColor: "var(--clr-secondary)" },
+];
+*/
+
 const GUIDE_STEPS = [
   { num: "01", cls: "step-primary",   title: "Capture the Signal",     desc: "Use our browser extension or the 'New Observation' console to save any web transmission. Galileo automatically parses metadata and creates a visual fingerprint of the link." },
   { num: "02", cls: "step-secondary", title: "Form Galactic Clusters",  desc: "Don't just save links — contextualize them. Group related transmissions into Collections. Add notes, research goals, and keep your data organized." },
@@ -18,14 +29,40 @@ const GUIDE_STEPS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/",          active: true },
+  { label: "Home",      icon: "space_dashboard", path: "/home",      active: true },
   { label: "Explore",   icon: "explore",         path: "/explore" },
   { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
   { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
   { label: "Account",   icon: "person",          path: "/account" },
 ];
 
+
+/* NASA APOD fetch — disabled for now, re-enable when ready
+  const [apodImgs, setApodImgs] = useState([]);
+  useEffect(() => {
+    const key = import.meta.env.VITE_NASA_API_KEY ?? "DEMO_KEY";
+    fetch(`https://api.nasa.gov/planetary/apod?api_key=${key}&count=8`)
+      .then(r => r.json())
+      .then(data => {
+        const images = data.filter(d => d.media_type === "image").map(d => d.url);
+        if (images.length >= 4) setApodImgs(images);
+      })
+      .catch(() => {});
+  }, []);
+  const collections = COLLECTION_META.map((col, i) => ({
+    ...col,
+    imgs: [apodImgs[i * 2], apodImgs[i * 2 + 1]],
+  }));
+*/
+
 export default function HomePage() {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(AuthenticationService.isAuthenticated());
+  }, []);
+
   return (
     <div className="page-root">
       <div className="nebula-glow-bg" />
@@ -33,18 +70,16 @@ export default function HomePage() {
       <div className="orb-bl" />
 
       <nav className="top-nav">
-        <div className="d-flex align-items-center gap-4">
-          <span className="galileo-logo font-headline fw-bold fs-4">Galileo</span>
-          <div className="d-none d-md-flex align-items-center gap-4">
-            <a href="/"          className="nav-link-item active">Home</a>
-            <a href="/explore"   className="nav-link-item">Explore</a>
-            <a href="/calendar"  className="nav-link-item">Calendar</a>
-            <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
-          </div>
+        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
+        <div className="d-none d-md-flex align-items-center gap-4">
+          <Link to="/home"      className="nav-link-item active">Home</Link>
+          <Link to="/explore"   className="nav-link-item">Explore</Link>
+          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
+          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>}
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-          <button className="btn-warp btn-warp-sm">Login</button>
         </div>
       </nav>
 
@@ -54,19 +89,15 @@ export default function HomePage() {
           <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
-          <button className="btn-warp d-flex align-items-center justify-content-center gap-2 mt-4" style={{ width: "100%", borderRadius: "0.75rem", padding: "0.75rem", fontSize: "0.75rem" }}>
-            New Observation
-          </button>
         </div>
-        <div className="sidebar-footer d-flex flex-column gap-1" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
-          <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-          <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
+        <div className="sidebar-footer">
+          <button className="sidebar-new-obs-btn">New Observation</button>
         </div>
       </aside>
 

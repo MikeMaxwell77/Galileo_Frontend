@@ -226,6 +226,41 @@ export const AstronomyBodiesInterface = {
             return [];
         }
 
+    },
+    FetchEventsOnDate: async ({ bodyid, longitude, latitude, elevation, date }) => {
+        if (!(bodyid === "sun") && !(bodyid === "moon")) {
+            console.error("Events API only supports sun and moon");
+            return [];
+        }
+
+        const from = new Date(date);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(date);
+        to.setHours(23, 59, 59, 0);
+
+        const DateTimeRange = ComputeDateTimeRange({ startDateTime: from, endDateTime: to });
+
+        const query = BuildAllBodiesQuery({
+            Latitude: latitude,
+            Longitude: longitude,
+            Elevation: elevation,
+            FromDate: DateTimeRange.from_date,
+            ToDate: DateTimeRange.to_date,
+            Time: "12:00:00"
+        });
+
+        try {
+            const response = await AstronomyApiBodiesClient.get(`bodies/events/${bodyid}`, {
+                params: query,
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            if (!response || Object.keys(response.data) === 0) return [];
+            return response.data;
+        } catch (error) {
+            console.error("FetchEventsOnDate error:", error);
+            return [];
+        }
     }
 } // End AstronomyBodiesInterface
 

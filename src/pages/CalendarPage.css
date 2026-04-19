@@ -1,0 +1,17 @@
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.cal-modal-content {
+    background: #0f172a;
+    padding: 2rem;
+    border-radius: 16px;
+    width: 800px;
+    max-width: 90%;
+}

@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -20,24 +22,22 @@ export default function LoginPage() {
     try {
       if (activeTab === "login") {
         // Login
-        const response = await axios.post(`${AuthenticationService.AUTH_BACKEND_URL}/login`, {
-          email,
-          password,
-          });
+        const token = await AuthenticationService.Login(email, password)
 
-        const token = response.data; // we get a token from the backend
         if (!token || token.split(".").length !== 3) {
               throw new Error("Invalid token format");
         }
 
-        AuthenticationService.Login(token);
+        AuthenticationService.LoginToken(token);
         setMessage("Login Succesful");
+        navigate("/home");
       }
       else { // Register
         await AuthenticationService.Register(email, password);
         setMessage("Registration Succesful");
       }
     } catch (error) {
+      console.error("AUTH ERROR:", error.response?.data || error.message);
       if (activeTab === "login") {
         setMessage("Login failed. Please check your credentials.");
       } else {
@@ -48,6 +48,13 @@ export default function LoginPage() {
     }
   };
 
+  useEffect(()=>{
+    const Authenticated = AuthenticationService.isAuthenticated();
+
+    if (Authenticated) {
+      navigate("/home");
+    }
+  }, [])
 
   return (
     <div className="bg-nebula" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>

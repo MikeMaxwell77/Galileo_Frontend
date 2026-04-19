@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
@@ -7,6 +7,9 @@ import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
 import AuthenticationService from "../auth/AuthenticationService";
 
 import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
+import BookmarkService from "../GalileoBackendServices/BookmarksService";
+import { SatelliteInterface } from "../GalileoBackendServices/nasaSatelliteService.js";
+
 
 
 
@@ -18,7 +21,7 @@ const SIGNALS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/" },
+  { label: "Home",      icon: "space_dashboard", path: "/home" },
   { label: "Explore",   icon: "explore",         path: "/explore", active: true },
   { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
   { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
@@ -32,11 +35,19 @@ export default function ExplorePage() {
   const [bookmarks, setBookmarks] = useState({ 1: true });
   const [query, setQuery] = useState("");
 
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [isLogedIn, setIsLogedIn] = useState(false);
-  const [loginFailed, setLoginFailed] = useState(false)
+  const [loginFailed, setLoginFailed] = useState(false);
+  const [myBookmarks, setMyBookmarks] = useState([]);
+  const bookmarkedSet = useMemo(() => {
+    const set = new Set(myBookmarks.map(bm => `${bm.whichAPI}:${bm.API_identifier}`));
+    console.log("Bookmark set contents:", set);
+    return set;
+  }, [myBookmarks]);
 
   const [reloadMWBStore, setReloadMWBStore] = useState(true);
   const [milkyWayBodies, setMilkyWayBodies] = useState({
@@ -49,32 +60,71 @@ export default function ExplorePage() {
     data: null
   })
 
+  // nasa API for satallites
+  const [satellites, setSatellites] = useState([]);
 
-  const toggleBookmark = async (id) => {
-    if (!AuthenticationService.isAuthenticated()) {
-      setModal({ type: "login", data: null });
-      return;
-    }
+  const mapSatelliteToEventObj = (sat) => ({
+    id: sat.Id,
+    title: sat.Name,
+    source: "SSC",
+    desc: `Satellite · ${sat.StartTime?.slice(0, 4) ?? "?"} – ${sat.EndTime?.slice(0, 4) ?? "present"}`,
+    icon: "satellite_alt",
+    iconColor: "var(--clr-tertiary)",
+    glowColor: "rgba(255,231,146,0.05)",
+    tags: [{ label: "Satellite", color: "var(--clr-tertiary)", border: "rgba(255,231,146,0.2)" }],
+    scanned: sat.StartTime,
+    equatorial_pos: null,
+  });
 
-    const isCurrentlySaved = bookmarks[id];
-
-    try {
-      if (isCurrentlySaved) {
-        await BookmarkService.removeBookmark(id);
-      } else {
-        await BookmarkService.addBookmark(id);
+  
+  
+  useEffect(() => {
+    console.log("Satelite use effect fired")
+    const loadSatellites = async () => {
+      try {
+        const res = await SatelliteInterface.FetchAllSatellites();
+        console.log("Satellites loaded:", res.length);     // does this fire at all?
+        console.log("Sample:", res[0]);
+        const mapped = res.map(mapSatelliteToEventObj);
+        console.log("Mapped satellites:", mapped.length);
+        console.log("Sample mapped satellite:", mapped[0]);
+        setSatellites(mapped);
+      } catch (err) {
+        console.error("Failed to load satellites", err);
       }
+    };
+    loadSatellites();
+  }, []);
 
-      // update UI after success
-      setBookmarks(prev => ({
-        ...prev,
-        [id]: !prev[id]
-      }));
+const toggleBookmark = async (sig) => {
+  if (!AuthenticationService.isAuthenticated()) {
+    setModal({ type: "login", data: null });
+    return;
+  }
 
-    } catch (err) {
-      console.error("Bookmark failed", err);
+  const bookmarkKey = `${sig.source}:${sig.id}`;
+  const isCurrentlySaved = bookmarkedSet.has(bookmarkKey);
+  const savedBookmark = myBookmarks.find(
+    bm => `${bm.whichAPI}:${bm.API_identifier}` === bookmarkKey
+  );
+
+  try {
+    if (isCurrentlySaved && savedBookmark) {
+      await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
+    } else {
+      await BookmarkService.CreateNewBookmark({
+        objectAPIIdentifier: sig.id,
+        whichAPI: sig.source,
+        displayName: sig.title,        
+        latitude: geoData.latitude,
+        longitude: geoData.longitude
+      });
     }
-  };
+    await loadBookmarks();
+  } catch (err) {
+    console.error("Bookmark failed", err);
+  }
+};
 
   const handleManualSubmit = (lat, long, elev) => {
     setManualLocation(lat, long, elev);
@@ -84,13 +134,14 @@ export default function ExplorePage() {
   };
 
   const handleLogin = () => {
-    //console.log("Login was pressed")
-    setModal({type: "login", data:null})
+    navigate("/");
   }
 
   const handleAccountSymbol = () => {
     navigate("/account")
   }
+
+  
 
   const TryLogin = async () => {
     setLoginFailed(false);
@@ -130,10 +181,12 @@ export default function ExplorePage() {
 
   const mapAstronomySearchResToEventObj = (obj) => {
     return {
+      source: "AstronomyAPI",
       id: obj.id,
       title: obj.name,
-      desc: `${obj.type.name} in ${obj.position.constellation.name}`,
+      desc: `${obj.type.name} in ${obj.position.constellation.name ? obj.position.constellation.name : "n/a"}`,
       icon: setEventIcon(obj.type.id) ,
+      searchobj:true,
 
       equatorial_pos: obj.position.equatorial,
       crossIdentification: obj.crossIdentification,
@@ -173,8 +226,10 @@ export default function ExplorePage() {
 
   const mapAstronomyBoidesResToEventObj = (obj) => {
     return {
+      source: "AstronomyAPI",
       id: obj.entry.id,
       title: obj.entry.name,
+      searchobj: true,
 
       desc: `${obj.latest.position.constellation.name}`,
 
@@ -193,18 +248,26 @@ export default function ExplorePage() {
 
   const normalizeString = (str) => str.toLowerCase().trim();
 
+  const requestIdRef = useRef(0); // to stop overwriting when searching
   useEffect(() => {
     if (!query) return;
-    setLoading(true);
+    if (!events) setLoading(true);
+    if (!debouncedQuery) return;
+    
+
+    const currentRequest = ++requestIdRef.current;
 
     const searchForObjects = async () => {
       try {
         const response = await AstronomySearchInterface.FetchObjectsByName(
           {
-            objectSearchTerm: query.toString(),
+            objectSearchTerm: debouncedQuery.toString(),
             exact: false
           }
         )
+
+        if (currentRequest != requestIdRef.current) return;
+        if(!currentRequest) return;
 
         // Should also check against the ones in the bodies api and return them if its a match
 
@@ -212,24 +275,34 @@ export default function ExplorePage() {
         let milkyMatches = [];
         if (milkyWayBodies.data) {
           milkyMatches = milkyWayBodies.data.filter(
-            body => normalizeString(body.title).includes(normalizeString(query))
+            body => normalizeString(body.title).includes(normalizeString(debouncedQuery))
           );
         }
 
-        const combined = [...mapped, ...milkyMatches]
+        const satMatches = satellites.filter(
+          sat => normalizeString(sat.title).includes(normalizeString(debouncedQuery))
+        );
 
+        const combined = [...mapped, ...milkyMatches, ...satMatches];
+        console.log("satellites state at search time:", satellites.length);
+        console.log("query:", debouncedQuery);
+        console.log("satMatches:", satMatches);
         setEvents(combined);
+
         //console.log(combined);
       } catch (error) {
         console.error("Search for object api request failed:", error);
       } finally {
-        setLoading(false);
+        if(currentRequest == requestIdRef.current) {
+          setLoading(false);
+        }
+        
       }
     }
 
     searchForObjects();
 
-  }, [query])
+  }, [debouncedQuery, satellites])
 
   useEffect(() => {
     // Will only be possible if the user has their location shared
@@ -273,6 +346,14 @@ export default function ExplorePage() {
   }, [hasGeoData, reloadMWBStore])
 
   useEffect(()=>{
+    const timeout = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [query])
+
+  useEffect(()=>{
     console.log("Initial init effect")
     const checkAuthenticated = async () =>{
       if (AuthenticationService.isAuthenticated()) {
@@ -286,20 +367,40 @@ export default function ExplorePage() {
 
   }, [])
 
+  const loadBookmarks = async () => {
+    try {
+      const res = await BookmarkService.GetAuthUserBookmarks();
+      console.log(res);
+      console.log("First Bookmark:", res?.[0]);
+      if (res) setMyBookmarks(res);
+
+    } catch (error) {
+      console.error("Failed to load bookmarks", err);
+    }
+  }
+
+  useEffect(()=>{
+   
+
+    if(isLogedIn){
+      loadBookmarks()
+      console.log(myBookmarks);
+    }
+  }, [isLogedIn])
+
   return (
     <div className="page-root">
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <a href="/"          className="nav-link-item">Home</a>
-          <a href="/explore"   className="nav-link-item active">Explore</a>
-          <a href="/calendar"  className="nav-link-item">Calendar</a>
-          <a href="/bookmarks" className="nav-link-item">Bookmarks</a>
+          <Link to="/home"      className="nav-link-item">Home</Link>
+          <Link to="/explore"   className="nav-link-item active">Explore</Link>
+          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
+          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>}
           <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
-          
-          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
         </div>
       </nav>
 
@@ -309,16 +410,11 @@ export default function ExplorePage() {
           <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
             {NAV_ITEMS.map((item) => (
-              <a key={item.label} href={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
+              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
                 <span className="material-symbols-outlined">{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
-          </nav>
-          <div className="sidebar-section-label mt-4">System</div>
-          <nav className="d-flex flex-column gap-1">
-            <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-            <a href="/support"  className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
           </nav>
         </div>
         <div className="sidebar-footer">
@@ -365,7 +461,7 @@ export default function ExplorePage() {
               <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
                 <ExplorePageEvent
                   data={sig}
-                  isSaved={bookmarks[sig.id]}
+                  isSaved={bookmarkedSet.has(`${sig.source}:${sig.id}`)}
                   onToggleBookmark={toggleBookmark}
                   onOpen={()=> setModal({type:"event", data:sig})}
                 />
@@ -392,32 +488,46 @@ export default function ExplorePage() {
             {/* EVENT MODAL */}
             {modal.type === "event" && (
               <>
-                <h2>{modal.data.title}</h2>
-                <p>{modal.data.desc}</p>
+               <div>
+                  <h1 className="text-center">{modal.data.title}</h1>
+                  <h3 className="text-center">{modal.data.desc}</h3>
+               </div>
+
+               
 
                 <div className="d-flex gap-2 mb-3">
+                  
                   {modal.data.tags?.map(tag => (
                     <span key={tag.label}>{tag.label}</span>
                   ))}
                 </div>
 
+
                 <p><strong>Scanned:</strong> {modal.data.scanned}</p>
+
+                {/*Guard for satellites which have no equatorial position */}
+                {modal.data.equatorial_pos ? (
                 <div>
                   <h4><strong>Equatorial Position Data</strong></h4>
                   <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
                   <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
                 </div>
+                ) : (
+                  <div>
+                    <h4><strong>Orbital Object</strong></h4>
+                    <p>Source: NASA Satellite Situation Center</p>
+                    <p>Trajectory data available from {modal.data.scanned?.slice(0, 10)}</p>
+                  </div>
+                )}
 
                 <div className="d-flex gap-2 mt-3">
-                  <button
-                    className="btn-warp"
-                    onClick={() => setModal({ type: null, data: null })}
-                  >
+                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>
                     Cancel | Close
                   </button>
                 </div>
               </>
             )}
+
 
             {/* LOCATION MODAL */}
             {modal.type === "location" && (
