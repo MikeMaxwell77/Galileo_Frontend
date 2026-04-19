@@ -35,6 +35,7 @@ function App() {
 
           {/* PUBLIC ROUTES */}
           <Route path="/"         element={<LoginPage />} />
+          <Route path="/login"    element={<LoginPage />}/>
           <Route path="/home"     element={<HomePage />} />
           <Route path="/explore"  element={<ExplorePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
