@@ -20,6 +20,7 @@ import LoginPage    from "./pages/LoginPage";
 import BookmarksPage from "./pages/BookmarkPage";
 import BookmarksDebug from './pages/testing/bookmarkTest'
 import AccountPageTest from './pages/AccountPageTest';
+import SatelliteApiTest from './components/NASA_API/SatalliteAPI_Test';
 
 
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="/loginTest"     element={<LoginTesting />} />
           <Route path="/bookmarkTest" element={<BookmarksDebug/>} />
           <Route path="/accountTest" element={<AccountPageTest/>} />
+          <Route path="/satelliteTest" element={<SatelliteApiTest/>} />
           {/*<Route path="/accountLook" element={<Account/>} />*/}
 
           {/* PRIVILEGED ROUTES */}
