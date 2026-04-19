@@ -50,7 +50,11 @@ const AuthenticationService = {
     Logout : () => {
         const confirmLogout = window.confirm("Are you sure you want to log out?");
 
-        if(!confirmLogout) return;
+        if(!confirmLogout) {
+            return;
+        }else{
+            window.location.href = "/";
+        }
 
         localStorage.removeItem("AuthToken");
 
