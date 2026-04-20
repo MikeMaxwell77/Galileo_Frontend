@@ -21,11 +21,11 @@ const SIGNALS = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/home" },
-  { label: "Explore",   icon: "explore",         path: "/explore", active: true },
-  { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
-  { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
-  { label: "Account",   icon: "person",          path: "/account" },
+  { label: "Home", icon: "space_dashboard", path: "/home" },
+  { label: "Explore", icon: "explore", path: "/explore", active: true },
+  { label: "Calendar", icon: "calendar_month", path: "/calendar" },
+  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
+  { label: "Account", icon: "person", path: "/account" },
 ];
 
 export default function ExplorePage() {
@@ -76,8 +76,8 @@ export default function ExplorePage() {
     equatorial_pos: null,
   });
 
-  
-  
+
+
   useEffect(() => {
     console.log("Satelite use effect fired")
     const loadSatellites = async () => {
@@ -96,35 +96,37 @@ export default function ExplorePage() {
     loadSatellites();
   }, []);
 
-const toggleBookmark = async (sig) => {
-  if (!AuthenticationService.isAuthenticated()) {
-    setModal({ type: "login", data: null });
-    return;
-  }
-
-  const bookmarkKey = `${sig.source}:${sig.id}`;
-  const isCurrentlySaved = bookmarkedSet.has(bookmarkKey);
-  const savedBookmark = myBookmarks.find(
-    bm => `${bm.whichAPI}:${bm.API_identifier}` === bookmarkKey
-  );
-
-  try {
-    if (isCurrentlySaved && savedBookmark) {
-      await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
-    } else {
-      await BookmarkService.CreateNewBookmark({
-        objectAPIIdentifier: sig.id,
-        whichAPI: sig.source,
-        displayName: sig.title,        
-        latitude: geoData.latitude,
-        longitude: geoData.longitude
-      });
+  const toggleBookmark = async (sig) => {
+    if (!AuthenticationService.isAuthenticated()) {
+      setModal({ type: "login", data: null });
+      return;
     }
-    await loadBookmarks();
-  } catch (err) {
-    console.error("Bookmark failed", err);
-  }
-};
+
+    const bookmarkKey = `${sig.source}:${sig.id}`;
+    const isCurrentlySaved = bookmarkedSet.has(bookmarkKey);
+    const savedBookmark = myBookmarks.find(
+      bm => `${bm.whichAPI}:${bm.API_identifier}` === bookmarkKey
+    );
+
+    try {
+      if (isCurrentlySaved && savedBookmark) {
+        await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
+      } else {
+        console.log(sig)
+
+        await BookmarkService.CreateNewBookmark({
+          objectAPIIdentifier: sig.id,
+          whichAPI: sig.source || "error api identifier",
+          displayName: sig.title,
+          latitude: geoData.latitude,
+          longitude: geoData.longitude
+        });
+      }
+      await loadBookmarks();
+    } catch (err) {
+      console.error("Bookmark failed", err);
+    }
+  };
 
   const handleManualSubmit = (lat, long, elev) => {
     setManualLocation(lat, long, elev);
@@ -141,7 +143,7 @@ const toggleBookmark = async (sig) => {
     navigate("/account")
   }
 
-  
+
 
   const TryLogin = async () => {
     setLoginFailed(false);
@@ -155,7 +157,7 @@ const toggleBookmark = async (sig) => {
         setIsLogedIn(true);
         setModal({ type: null, data: null });
       } else {
-        
+
       }
     } catch (err) {
       console.error("Login failed", err);
@@ -164,7 +166,7 @@ const toggleBookmark = async (sig) => {
   }
 
   const setEventIcon = (type_id) => {
-    switch (type_id){
+    switch (type_id) {
       //https://icons.getbootstrap.com/ 
       default:
         return "Star"
@@ -185,8 +187,8 @@ const toggleBookmark = async (sig) => {
       id: obj.id,
       title: obj.name,
       desc: `${obj.type.name} in ${obj.position.constellation.name ? obj.position.constellation.name : "n/a"}`,
-      icon: setEventIcon(obj.type.id) ,
-      searchobj:true,
+      icon: setEventIcon(obj.type.id),
+      searchobj: true,
 
       equatorial_pos: obj.position.equatorial,
       crossIdentification: obj.crossIdentification,
@@ -253,7 +255,7 @@ const toggleBookmark = async (sig) => {
     if (!query) return;
     if (!events) setLoading(true);
     if (!debouncedQuery) return;
-    
+
 
     const currentRequest = ++requestIdRef.current;
 
@@ -267,7 +269,7 @@ const toggleBookmark = async (sig) => {
         )
 
         if (currentRequest != requestIdRef.current) return;
-        if(!currentRequest) return;
+        if (!currentRequest) return;
 
         // Should also check against the ones in the bodies api and return them if its a match
 
@@ -293,10 +295,10 @@ const toggleBookmark = async (sig) => {
       } catch (error) {
         console.error("Search for object api request failed:", error);
       } finally {
-        if(currentRequest == requestIdRef.current) {
+        if (currentRequest == requestIdRef.current) {
           setLoading(false);
         }
-        
+
       }
     }
 
@@ -336,16 +338,16 @@ const toggleBookmark = async (sig) => {
       //console.log(bodyNames);
       //console.log(bodyPositionEvents);
       setMilkyWayBodies({
-          names: bodyNames,
-          data: bodyPositionEvents
-        });
+        names: bodyNames,
+        data: bodyPositionEvents
+      });
     }
 
     fetchBodies()
 
   }, [hasGeoData, reloadMWBStore])
 
-  useEffect(()=>{
+  useEffect(() => {
     const timeout = setTimeout(() => {
       setDebouncedQuery(query);
     }, 400);
@@ -353,9 +355,9 @@ const toggleBookmark = async (sig) => {
     return () => clearTimeout(timeout);
   }, [query])
 
-  useEffect(()=>{
+  useEffect(() => {
     console.log("Initial init effect")
-    const checkAuthenticated = async () =>{
+    const checkAuthenticated = async () => {
       if (AuthenticationService.isAuthenticated()) {
         console.log("Authenticated user");
         setIsLogedIn(true);
@@ -379,10 +381,10 @@ const toggleBookmark = async (sig) => {
     }
   }
 
-  useEffect(()=>{
-   
+  useEffect(() => {
 
-    if(isLogedIn){
+
+    if (isLogedIn) {
       loadBookmarks()
       console.log(myBookmarks);
     }
@@ -393,9 +395,9 @@ const toggleBookmark = async (sig) => {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home"      className="nav-link-item">Home</Link>
-          <Link to="/explore"   className="nav-link-item active">Explore</Link>
-          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/home" className="nav-link-item">Home</Link>
+          <Link to="/explore" className="nav-link-item active">Explore</Link>
+          <Link to="/calendar" className="nav-link-item">Calendar</Link>
           <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
@@ -463,7 +465,7 @@ const toggleBookmark = async (sig) => {
                   data={sig}
                   isSaved={bookmarkedSet.has(`${sig.source}:${sig.id}`)}
                   onToggleBookmark={toggleBookmark}
-                  onOpen={()=> setModal({type:"event", data:sig})}
+                  onOpen={() => setModal({ type: "event", data: sig })}
                 />
               </div>
             ))}
@@ -488,15 +490,15 @@ const toggleBookmark = async (sig) => {
             {/* EVENT MODAL */}
             {modal.type === "event" && (
               <>
-               <div>
+                <div>
                   <h1 className="text-center">{modal.data.title}</h1>
                   <h3 className="text-center">{modal.data.desc}</h3>
-               </div>
+                </div>
 
-               
+
 
                 <div className="d-flex gap-2 mb-3">
-                  
+
                   {modal.data.tags?.map(tag => (
                     <span key={tag.label}>{tag.label}</span>
                   ))}
@@ -507,11 +509,11 @@ const toggleBookmark = async (sig) => {
 
                 {/*Guard for satellites which have no equatorial position */}
                 {modal.data.equatorial_pos ? (
-                <div>
-                  <h4><strong>Equatorial Position Data</strong></h4>
-                  <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
-                  <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
-                </div>
+                  <div>
+                    <h4><strong>Equatorial Position Data</strong></h4>
+                    <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
+                    <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
+                  </div>
                 ) : (
                   <div>
                     <h4><strong>Orbital Object</strong></h4>
@@ -534,7 +536,7 @@ const toggleBookmark = async (sig) => {
               <>
                 <h2>Share Location</h2>
                 <p>Enter your location manually or enable browser location access.</p>
-              
+
                 {(!hasGeoData && !geoAPIDenied) && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
 
                 {!hasGeoData && geoAPIDenied && (
@@ -601,19 +603,19 @@ const toggleBookmark = async (sig) => {
                 <input id="password" type="password" placeholder="Password" className="form-control mb-2" />
 
                 <div className="d-flex gap-2 mt-3">
-                <button
-                  className="btn-warp"
-                  onClick={async () => TryLogin()}
-                >
-                  Login
-                </button>
+                  <button
+                    className="btn-warp"
+                    onClick={async () => TryLogin()}
+                  >
+                    Login
+                  </button>
 
-                <button
-                  className="btn-warp"
-                  onClick={() => setModal({ type: null, data: null })}
-                >
-                  Cancel
-                </button>
+                  <button
+                    className="btn-warp"
+                    onClick={() => setModal({ type: null, data: null })}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </>
             )}
