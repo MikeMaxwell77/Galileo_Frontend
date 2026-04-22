@@ -59,8 +59,8 @@ export default function ExplorePageDebug() {
     }, [])
 
     useEffect(() => {
-        console.log("Names data", bodyNames);
-        console.log("Pos data", posData);
+        //console.log("Names data", bodyNames);
+        //console.log("Pos data", posData);
     }, [posData, bodyNames])
 
     useEffect(() => {

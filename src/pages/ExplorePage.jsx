@@ -45,7 +45,7 @@ export default function ExplorePage() {
   const [myBookmarks, setMyBookmarks] = useState([]);
   const bookmarkedSet = useMemo(() => {
     const set = new Set(myBookmarks.map(bm => `${bm.whichAPI}:${bm.API_identifier}`));
-    console.log("Bookmark set contents:", set);
+    //console.log("Bookmark set contents:", set);
     return set;
   }, [myBookmarks]);
 
@@ -79,15 +79,15 @@ export default function ExplorePage() {
 
 
   useEffect(() => {
-    console.log("Satelite use effect fired")
+    //console.log("Satelite use effect fired")
     const loadSatellites = async () => {
       try {
         const res = await SatelliteInterface.FetchAllSatellites();
-        console.log("Satellites loaded:", res.length);     // does this fire at all?
-        console.log("Sample:", res[0]);
+        // console.log("Satellites loaded:", res.length);     // does this fire at all?
+        // console.log("Sample:", res[0]);
         const mapped = res.map(mapSatelliteToEventObj);
-        console.log("Mapped satellites:", mapped.length);
-        console.log("Sample mapped satellite:", mapped[0]);
+        // console.log("Mapped satellites:", mapped.length);
+        // console.log("Sample mapped satellite:", mapped[0]);
         setSatellites(mapped);
       } catch (err) {
         console.error("Failed to load satellites", err);
@@ -112,7 +112,7 @@ export default function ExplorePage() {
       if (isCurrentlySaved && savedBookmark) {
         await BookmarkService.DeleteBookmarkByID(savedBookmark.id);
       } else {
-        console.log(sig)
+        //console.log(sig)
 
         await BookmarkService.CreateNewBookmark({
           objectAPIIdentifier: sig.id,
@@ -286,9 +286,9 @@ export default function ExplorePage() {
         );
 
         const combined = [...mapped, ...milkyMatches, ...satMatches];
-        console.log("satellites state at search time:", satellites.length);
-        console.log("query:", debouncedQuery);
-        console.log("satMatches:", satMatches);
+        //console.log("satellites state at search time:", satellites.length);
+        //console.log("query:", debouncedQuery);
+        //console.log("satMatches:", satMatches);
         setEvents(combined);
 
         //console.log(combined);
@@ -356,10 +356,10 @@ export default function ExplorePage() {
   }, [query])
 
   useEffect(() => {
-    console.log("Initial init effect")
+    //console.log("Initial init effect")
     const checkAuthenticated = async () => {
       if (AuthenticationService.isAuthenticated()) {
-        console.log("Authenticated user");
+        //console.log("Authenticated user");
         setIsLogedIn(true);
       }
     }
@@ -372,8 +372,8 @@ export default function ExplorePage() {
   const loadBookmarks = async () => {
     try {
       const res = await BookmarkService.GetAuthUserBookmarks();
-      console.log(res);
-      console.log("First Bookmark:", res?.[0]);
+      //console.log(res);
+      //console.log("First Bookmark:", res?.[0]);
       if (res) setMyBookmarks(res);
 
     } catch (error) {
@@ -386,7 +386,7 @@ export default function ExplorePage() {
 
     if (isLogedIn) {
       loadBookmarks()
-      console.log(myBookmarks);
+      //console.log(myBookmarks);
     }
   }, [isLogedIn])
 
