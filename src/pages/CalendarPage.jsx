@@ -37,6 +37,26 @@ const getMoonPhaseData = (date) => {
   return { phase: pct, name };
 };
 
+// SVG sun disc — static, always fully illuminated
+const SunVisual = ({ size = 72 }) => {
+  const r = (size - 4) / 2;
+  const rays = [0, 45, 90, 135, 180, 225, 270, 315];
+  return (
+    <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`}>
+      <circle r={r} fill="rgba(255,210,80,0.08)" stroke="rgba(255,210,80,0.2)" strokeWidth="1" />
+      {rays.map((angle, i) => {
+        const rad = (angle * Math.PI) / 180;
+        const x1 = Math.cos(rad) * (r * 0.65);
+        const y1 = Math.sin(rad) * (r * 0.65);
+        const x2 = Math.cos(rad) * (r * 0.88);
+        const y2 = Math.sin(rad) * (r * 0.88);
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,210,80,0.75)" strokeWidth="1.5" strokeLinecap="round" />;
+      })}
+      <circle r={r * 0.5} fill="rgba(255,210,80,0.95)" />
+    </svg>
+  );
+};
+
 // SVG moon phase disc — phase is 0–1 (0=new, 0.5=full, 1=new)
 const MoonPhaseVisual = ({ phase, size = 72 }) => {
   const r = (size - 4) / 2;
@@ -397,29 +417,16 @@ export default function CalendarPage() {
         </div>
       </main>
 
-      <button className="fab-btn">
-        <span className="material-symbols-outlined" style={{ fontSize: "1.75rem", color: "var(--clr-on-primary)" }}>rocket_launch</span>
-      </button>
-
       {modal.type && (
         <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
           <div className="cal-modal-content" onClick={(e) => e.stopPropagation()}>
 
             {modal.type === "day" && (
               <>
-                <div className="mb-4" style={{ position: "relative", textAlign: "center" }}>
+                <div className="mb-4" style={{ textAlign: "center" }}>
                   <h2 className="font-headline fw-bold mb-0">
                     {MONTH_NAMES[selMonth]} {selDay}, {selYear}
                   </h2>
-                  {moonPhaseData && (
-                    <div className="d-flex flex-column align-items-center gap-1"
-                      style={{ position: "absolute", right: 0, top: 0 }}>
-                      <MoonPhaseVisual phase={moonPhaseData.phase} size={72} />
-                      <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
-                        {moonPhaseData.name}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {!hasGeoData && (
@@ -463,7 +470,6 @@ export default function CalendarPage() {
                     </div>
 
                     <div className="col-12 col-md-3">
-                      <div className="mb-1"><SunIcon size={22} /></div>
                       <h4 className="font-headline fw-bold mb-2"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
                         SUN
@@ -495,10 +501,12 @@ export default function CalendarPage() {
                       ) : sunEvents.length === 0 ? (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
                       ) : null}
+                      <div className="d-flex justify-content-center mt-3">
+                        <SunVisual size={72} />
+                      </div>
                     </div>
 
                     <div className="col-12 col-md-3">
-                      <div className="mb-1"><MoonIcon size={22} /></div>
                       <h4 className="font-headline fw-bold mb-2"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
                         MOON
@@ -530,6 +538,14 @@ export default function CalendarPage() {
                       ) : moonEvents.length === 0 ? (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
                       ) : null}
+                      {moonPhaseData && (
+                        <div className="d-flex flex-column align-items-center gap-1 mt-3">
+                          <MoonPhaseVisual phase={moonPhaseData.phase} size={72} />
+                          <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+                            {moonPhaseData.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {withinPositionWindow && (() => {

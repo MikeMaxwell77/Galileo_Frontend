@@ -29,12 +29,13 @@ export default function LoginPage() {
         }
 
         AuthenticationService.LoginToken(token);
-        setMessage("Login Succesful");
+        setMessage("Login Successful");
         navigate("/home");
       }
       else { // Register
         await AuthenticationService.Register(email, password);
-        setMessage("Registration Succesful");
+        setMessage("Registration Successful");
+        setActiveTab("login");
       }
     } catch (error) {
       console.error("AUTH ERROR:", error.response?.data || error.message);
@@ -150,7 +151,7 @@ export default function LoginPage() {
                 </div>
 
                 {message && (
-                  <p style={{ fontSize: "0.9rem", color: message.includes("✅") ? "#4ade80" : "#f87171" }}>
+                  <p style={{ fontSize: "0.9rem", color: message.includes("Successful") ? "#4ade80" : "#f87171" }}>
                     {message}
                   </p>
                 )}
