@@ -331,29 +331,32 @@ export default function BookmarksPage() {
           {authenticated && (
             <div className="bookmarks-table-wrap mt-5">
               <div className="table-responsive">
-                <div className="d-flex justify-content-between algin-items-center mb-3">
-                  <h3 className="text-center">Search for other users Bookmarks</h3>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search users..."
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                  />
-                </div>
-                {showSearchResults && userSearchResults.length > 0 && (
-                  <div className="search-dropdown">
-                    {userSearchResults.map((user) => (
-                      <div
-                        key={user.email}
-                        className="search-item"
-                        onClick={() => handleUserSelect(user)}
-                      >
-                        {user.email}
+                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+                  <h3 className="mb-0">See what other Users have Bookmarked</h3>
+                  <div className="position-relative" style={{ maxWidth: "320px", width: "100%" }}>
+                    <span className="material-symbols-outlined input-icon">person_search</span>
+                    <input
+                      className="galileo-input form-control"
+                      type="text"
+                      placeholder="Search users..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                    />
+                    {showSearchResults && userSearchResults.length > 0 && (
+                      <div className="search-dropdown">
+                        {userSearchResults.map((user) => (
+                          <div
+                            key={user.email}
+                            className="search-item"
+                            onClick={() => handleUserSelect(user)}
+                          >
+                            {user.email}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                </div>
                 <table className="bookmarks-table w-100">
                   <thead>
                     <tr className="bookmarks-thead-row">

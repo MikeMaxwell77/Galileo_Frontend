@@ -10,8 +10,10 @@
 
 .cal-modal-content {
     background: #0f172a;
-    padding: 2rem;
+    padding: 2.5rem;
     border-radius: 16px;
-    width: 800px;
-    max-width: 90%;
+    width: 960px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
 }
