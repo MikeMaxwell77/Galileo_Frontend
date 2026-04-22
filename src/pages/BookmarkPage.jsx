@@ -123,7 +123,7 @@ export default function BookmarksPage() {
   };
 
   const handleLogin = () => {
-    navigate("/");
+    navigate("/login");
   }
 
   const TryLogin = async () => {

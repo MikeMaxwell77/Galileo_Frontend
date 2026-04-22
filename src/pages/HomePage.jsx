@@ -3,16 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthenticationService from "../auth/AuthenticationService";
 
 const BOOKMARKS = [
-  { icon: "database", iconBg: "rgba(186,146,250,0.1)", iconColor: "var(--clr-secondary)", title: "AI Model Archive 2024",  desc: "The largest curated collection of open-source LLMs and training datasets for cosmic simulation.", tag: "Science / AI" },
-  { icon: "palette",  iconBg: "rgba(255,231,146,0.1)", iconColor: "var(--clr-tertiary)",  title: "Nebula Design Assets",   desc: "High-resolution procedural texture maps for celestial rendering and UI backgrounds.", tag: "Design / Assets" },
-  { icon: "public",   iconBg: "rgba(224,142,254,0.1)", iconColor: "var(--clr-primary)",   title: "Planetary Governance",   desc: "Whitepaper discussing legal frameworks for sustainable lunar and martian colonies.", tag: "Legal / Space" },
+  { icon: "database", iconBg: "rgba(186,146,250,0.1)", iconColor: "var(--clr-secondary)", title: "AI Model Archive 2024", desc: "The largest curated collection of open-source LLMs and training datasets for cosmic simulation.", tag: "Science / AI" },
+  { icon: "palette", iconBg: "rgba(255,231,146,0.1)", iconColor: "var(--clr-tertiary)", title: "Nebula Design Assets", desc: "High-resolution procedural texture maps for celestial rendering and UI backgrounds.", tag: "Design / Assets" },
+  { icon: "public", iconBg: "rgba(224,142,254,0.1)", iconColor: "var(--clr-primary)", title: "Planetary Governance", desc: "Whitepaper discussing legal frameworks for sustainable lunar and martian colonies.", tag: "Legal / Space" },
 ];
 
 const COLLECTIONS = [
-  { title: "Interstellar Physics", subtitle: "12 Transmissions • Science Archive", overlayColor: "rgba(224,142,254,0.2)", titleHoverColor: "var(--clr-primary)",
-    imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDmd-Fk1TnGuu58BdAiSF7zAOoPlWUhRig_ViO4ZLH8A-YydM0ZTE7CAFH60yz9jL-CJo3zOh-ISN_mL_frdU9IcIYRdh7uBfRds-qe2ePw2Fvi0yTbEvVdpJhT4--JTEM5N7MYAnc11PFessUTh_syx-HxTigoOtFIkq8JYV2amHpm4W1-U4oyEA6DS9TaQVOjSjF3PF58UsYQSKQvGOVNDMnFZ-bllSdhvmgRWELAnptSG_xS-KioeBuhZXDAoOaxig7a653NsqU", "https://lh3.googleusercontent.com/aida-public/AB6AXuCxddKjjqKIeBVi3dN-fqoqXsuwGZZw7M6RKcxL-D--q55ANFw_GdUR9CpQs8qp0t11QCTKzNmi_49lIQCrFcw8thYcLrM9NKtyp_crsWNUHp1hWzmX_xrdj7sJ6wYeVkD5jtg66rtnCMaFN7riV7TsynMsom15Btj-6j14sVOPdpts-J85wUzq3bL7d_iAogG4s301I_580kyHc8Bfy6M0H3apYA_JcqtGKiR89lAcvXmus4U1RH6tMHqteQniiBQRHcVO1Km4eRE"] },
-  { title: "Aesthetic Archetypes", subtitle: "28 Transmissions • Design Research", overlayColor: "rgba(186,146,250,0.2)", titleHoverColor: "var(--clr-secondary)",
-    imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDJpbcylIgwTzEd01l4X9XqQlRoK_K6C1FbDVzKiU6XX-AYLNf1QBX8it6yj5x0vVnZ1uyAb200aqHKLHyxbrMueObV5CYzbm89YE5u97MzkbTroLHfTqX1pTp2fSo9Bw4cGcspgdBBayyNLAne0IWxEVsfEiNn2JdUCBEePuUwPDd8qWOKFDwwxrM7LTUBOsXjWFLWuu8ujFRdm9My4wf4V4Dr4hACsYN3mMrRywlpKvHZUpcjFX5r-BJBSW4-UI9jfq3lW-ZM1dg", "https://lh3.googleusercontent.com/aida-public/AB6AXuAMOmjkMyNEJPmEPSFR37yoEQxLRQisrsRf8CQO6nk4SzT7wz4bvpdJ3rC6CFid87cHvjIrjv-4__oM1wcgp0LLButPKhI1GtArBWY-pLnmZDxG1otyGVbAwvsgsI8Qt7QjrTTLViK_dZLnCQZTyv6ULgoPBBu7y9K4hrToXvAETw4ZFANtJ40q1aoO0sY4wdDjBbBWbBB12X2jFQYbbokGpBgPUUgSxJPlEYM8LCW4up7I4c70JLxQHrV5E6BKlpvQXG8UZNOu-HY"] },
+  {
+    title: "Interstellar Physics", subtitle: "12 Transmissions • Science Archive", overlayColor: "rgba(224,142,254,0.2)", titleHoverColor: "var(--clr-primary)",
+    imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDmd-Fk1TnGuu58BdAiSF7zAOoPlWUhRig_ViO4ZLH8A-YydM0ZTE7CAFH60yz9jL-CJo3zOh-ISN_mL_frdU9IcIYRdh7uBfRds-qe2ePw2Fvi0yTbEvVdpJhT4--JTEM5N7MYAnc11PFessUTh_syx-HxTigoOtFIkq8JYV2amHpm4W1-U4oyEA6DS9TaQVOjSjF3PF58UsYQSKQvGOVNDMnFZ-bllSdhvmgRWELAnptSG_xS-KioeBuhZXDAoOaxig7a653NsqU", "https://lh3.googleusercontent.com/aida-public/AB6AXuCxddKjjqKIeBVi3dN-fqoqXsuwGZZw7M6RKcxL-D--q55ANFw_GdUR9CpQs8qp0t11QCTKzNmi_49lIQCrFcw8thYcLrM9NKtyp_crsWNUHp1hWzmX_xrdj7sJ6wYeVkD5jtg66rtnCMaFN7riV7TsynMsom15Btj-6j14sVOPdpts-J85wUzq3bL7d_iAogG4s301I_580kyHc8Bfy6M0H3apYA_JcqtGKiR89lAcvXmus4U1RH6tMHqteQniiBQRHcVO1Km4eRE"]
+  },
+  {
+    title: "Aesthetic Archetypes", subtitle: "28 Transmissions • Design Research", overlayColor: "rgba(186,146,250,0.2)", titleHoverColor: "var(--clr-secondary)",
+    imgs: ["https://lh3.googleusercontent.com/aida-public/AB6AXuDJpbcylIgwTzEd01l4X9XqQlRoK_K6C1FbDVzKiU6XX-AYLNf1QBX8it6yj5x0vVnZ1uyAb200aqHKLHyxbrMueObV5CYzbm89YE5u97MzkbTroLHfTqX1pTp2fSo9Bw4cGcspgdBBayyNLAne0IWxEVsfEiNn2JdUCBEePuUwPDd8qWOKFDwwxrM7LTUBOsXjWFLWuu8ujFRdm9My4wf4V4Dr4hACsYN3mMrRywlpKvHZUpcjFX5r-BJBSW4-UI9jfq3lW-ZM1dg", "https://lh3.googleusercontent.com/aida-public/AB6AXuAMOmjkMyNEJPmEPSFR37yoEQxLRQisrsRf8CQO6nk4SzT7wz4bvpdJ3rC6CFid87cHvjIrjv-4__oM1wcgp0LLButPKhI1GtArBWY-pLnmZDxG1otyGVbAwvsgsI8Qt7QjrTTLViK_dZLnCQZTyv6ULgoPBBu7y9K4hrToXvAETw4ZFANtJ40q1aoO0sY4wdDjBbBWbBB12X2jFQYbbokGpBgPUUgSxJPlEYM8LCW4up7I4c70JLxQHrV5E6BKlpvQXG8UZNOu-HY"]
+  },
 ];
 
 /* NASA APOD — disabled for now, re-enable when ready
@@ -23,17 +27,17 @@ const COLLECTION_META = [
 */
 
 const GUIDE_STEPS = [
-  { num: "01", cls: "step-primary",   title: "Capture the Signal",     desc: "Use our browser extension or the 'New Observation' console to save any web transmission. Galileo automatically parses metadata and creates a visual fingerprint of the link." },
-  { num: "02", cls: "step-secondary", title: "Form Galactic Clusters",  desc: "Don't just save links — contextualize them. Group related transmissions into Collections. Add notes, research goals, and keep your data organized." },
-  { num: "03", cls: "step-tertiary",  title: "Private Archives",        desc: "All your transmissions are end-to-end encrypted and visible only to you. You maintain full sovereignty over your digital research and bookmarks." },
+  { num: "01", cls: "step-primary", title: "Capture the Signal", desc: "Use our browser extension or the 'New Observation' console to save any web transmission. Galileo automatically parses metadata and creates a visual fingerprint of the link." },
+  { num: "02", cls: "step-secondary", title: "Form Galactic Clusters", desc: "Don't just save links — contextualize them. Group related transmissions into Collections. Add notes, research goals, and keep your data organized." },
+  { num: "03", cls: "step-tertiary", title: "Private Archives", desc: "All your transmissions are end-to-end encrypted and visible only to you. You maintain full sovereignty over your digital research and bookmarks." },
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/home",      active: true },
-  { label: "Explore",   icon: "explore",         path: "/explore" },
-  { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
-  { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks" },
-  { label: "Account",   icon: "person",          path: "/account" },
+  { label: "Home", icon: "space_dashboard", path: "/home", active: true },
+  { label: "Explore", icon: "explore", path: "/explore" },
+  { label: "Calendar", icon: "calendar_month", path: "/calendar" },
+  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
+  { label: "Account", icon: "person", path: "/account" },
 ];
 
 
@@ -72,13 +76,13 @@ export default function HomePage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home"      className="nav-link-item active">Home</Link>
-          <Link to="/explore"   className="nav-link-item">Explore</Link>
-          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/home" className="nav-link-item active">Home</Link>
+          <Link to="/explore" className="nav-link-item">Explore</Link>
+          <Link to="/calendar" className="nav-link-item">Calendar</Link>
           <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
-          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/")}>Login</button>}
+          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/login")}>Login</button>}
           <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
         </div>
       </nav>
