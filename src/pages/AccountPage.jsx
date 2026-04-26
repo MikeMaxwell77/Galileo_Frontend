@@ -240,7 +240,7 @@ export default function AccountPage() {
                   <button onClick={() => { AuthenticationService.Logout(); }} className="btn-sign-out">
                       Sign Out
                   </button>
-                  <button className=" py-1 px-3" onClick={() => setShowModal(true)}>
+                  <button className="btn-sign-out" onClick={() => setShowModal(true)}>
                       Update Account
                   </button>
                   <button onClick={async () => {

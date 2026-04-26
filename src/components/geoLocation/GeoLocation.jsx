@@ -53,7 +53,7 @@ export function useGeoLocation() {
                     setHasGeoData(true);
                     setGeoAPIDenied(false);
 
-                    resolve(data); 
+                    resolve(data);
                 },
                 (error) => {
                     if (error.code === error.PERMISSION_DENIED) {
@@ -86,7 +86,7 @@ export function useGeoLocation() {
             setGeoData(CreateGeoLocationData(latitude, longitude, altitude));
             setHasGeoData(true);
 
-            console.log("GeoLocation data updated: ", geoData);
+            //console.log("GeoLocation data updated: ", geoData);
 
         }, (error) => {
 

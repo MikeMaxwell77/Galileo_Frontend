@@ -13,7 +13,7 @@ export default function BookmarksDebug() {
     const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
 
     useEffect(() => {
-        if(AuthenticationService.isAuthenticated()) setAuthenticated(true);
+        if (AuthenticationService.isAuthenticated()) setAuthenticated(true);
     }, [])
 
     const handleCreateBookmark = (objAPIid) => {
@@ -32,14 +32,14 @@ export default function BookmarksDebug() {
 
     const handleLoadOtherUserBookmarks = async (userID) => {
         const otherBMs = await BookmarkService.GetBookmarks(userID);
-        if (otherBMs ) setOtherData(otherBMs)
-        console.log(otherBMs);
+        if (otherBMs) setOtherData(otherBMs)
+        //console.log(otherBMs);
     }
 
     return (
         <div classNameName="container mt-4">
 
-                
+
             <div className="text-center mb-4">
                 <h1>Test Dashboard</h1>
                 <p className="text-muted">Quick UI for debugging and testing</p>
@@ -47,23 +47,23 @@ export default function BookmarksDebug() {
 
             <div className="row">
 
-                
+
                 <div className="col-md-6">
                     <div className="card mb-3">
                         <div className="card-header">Info Display</div>
                         <div className="card-body">
-                            
+
 
                             {authenticated && (
                                 <>
-                                <p>You Are authenticated!</p>
-                                <ul id="infoList" className="list-group">
-                                    <li className="list-group-item">Your user id is: {AuthenticationService.getUserID()}</li>
-                                </ul>
+                                    <p>You Are authenticated!</p>
+                                    <ul id="infoList" className="list-group">
+                                        <li className="list-group-item">Your user id is: {AuthenticationService.getUserID()}</li>
+                                    </ul>
                                 </>
                             )}
 
-                            { hasGeoData && (
+                            {hasGeoData && (
                                 <>
                                     <p>GeoLocationData available</p>
                                     <ul id="infoList" className="list-group">
@@ -75,7 +75,7 @@ export default function BookmarksDebug() {
                                 </>
                             )}
 
-                            
+
                         </div>
                     </div>
 
@@ -99,7 +99,7 @@ export default function BookmarksDebug() {
                     </div>
                 </div>
 
-                
+
                 <div className="col-md-6">
 
 
@@ -109,7 +109,7 @@ export default function BookmarksDebug() {
                             <form id="testForm">
                                 <div className="mb-3">
                                     <label className="form-label">Object API identifier</label>
-                                    <input type="text" className="form-control" id="objAPIid" placeholder="Enter object API id"/>
+                                    <input type="text" className="form-control" id="objAPIid" placeholder="Enter object API id" />
                                 </div>
 
 

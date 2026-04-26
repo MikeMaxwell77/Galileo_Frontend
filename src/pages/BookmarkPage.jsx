@@ -10,18 +10,18 @@ import { GALILEO_BACKEND_SEARCH_ACCOUNT } from "../GalileoBackendServices/backen
 import "./BookmarkPage.css"
 
 const SIGNALS = [
-  { id: 1, icon: "pulse_alert", iconColor: "var(--clr-primary)",   iconBg: "rgba(224,142,254,0.1)", title: "Alpha-Centauri-Prime", type: "Terrestrial Signal",  url: "https://deepspace.observatory/ac-01.dat",          date: "Oct 14, 2142", size: "1.42 PB",   action: "View" },
-  { id: 2, icon: "warning",     iconColor: "var(--clr-tertiary)",  iconBg: "rgba(255,231,146,0.1)", title: "Nebula-Shroud-77",     type: "Anomalous Data",      url: "https://deepspace.observatory/anomaly-shroud.dat", date: "Nov 02, 2142", size: "894.2 TB", action: "Open" },
-  { id: 3, icon: "satellite_alt",iconColor: "var(--clr-primary)",  iconBg: "rgba(224,142,254,0.1)", title: "Vesta-Orbiter-Scan",   type: "Automated Telemetry", url: "https://vesta-mission.sol/telemetry/v-scan.log",    date: "Dec 19, 2142", size: "12.5 GB",  action: "View" },
-  { id: 4, icon: "star",        iconColor: "var(--clr-secondary)", iconBg: "rgba(186,146,250,0.1)", title: "Orion-Belt-Echo",      type: "Stellar Cartography", url: "https://orion-archive.org/echo-mapping.viz",       date: "Jan 05, 2143", size: "4.88 PB",   action: "Open" },
+  { id: 1, icon: "pulse_alert", iconColor: "var(--clr-primary)", iconBg: "rgba(224,142,254,0.1)", title: "Alpha-Centauri-Prime", type: "Terrestrial Signal", url: "https://deepspace.observatory/ac-01.dat", date: "Oct 14, 2142", size: "1.42 PB", action: "View" },
+  { id: 2, icon: "warning", iconColor: "var(--clr-tertiary)", iconBg: "rgba(255,231,146,0.1)", title: "Nebula-Shroud-77", type: "Anomalous Data", url: "https://deepspace.observatory/anomaly-shroud.dat", date: "Nov 02, 2142", size: "894.2 TB", action: "Open" },
+  { id: 3, icon: "satellite_alt", iconColor: "var(--clr-primary)", iconBg: "rgba(224,142,254,0.1)", title: "Vesta-Orbiter-Scan", type: "Automated Telemetry", url: "https://vesta-mission.sol/telemetry/v-scan.log", date: "Dec 19, 2142", size: "12.5 GB", action: "View" },
+  { id: 4, icon: "star", iconColor: "var(--clr-secondary)", iconBg: "rgba(186,146,250,0.1)", title: "Orion-Belt-Echo", type: "Stellar Cartography", url: "https://orion-archive.org/echo-mapping.viz", date: "Jan 05, 2143", size: "4.88 PB", action: "Open" },
 ];
 
 const NAV_ITEMS = [
-  { label: "Home",      icon: "space_dashboard", path: "/home" },
-  { label: "Explore",   icon: "explore",         path: "/explore" },
-  { label: "Calendar",  icon: "calendar_month",  path: "/calendar" },
-  { label: "Bookmarks", icon: "bookmarks",       path: "/bookmarks", active: true },
-  { label: "Account",   icon: "person",          path: "/account" },
+  { label: "Home", icon: "space_dashboard", path: "/home" },
+  { label: "Explore", icon: "explore", path: "/explore" },
+  { label: "Calendar", icon: "calendar_month", path: "/calendar" },
+  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks", active: true },
+  { label: "Account", icon: "person", path: "/account" },
 ];
 
 export default function BookmarksPage() {
@@ -38,7 +38,7 @@ export default function BookmarksPage() {
 
   const [authenticated, setAuthenticated] = useState(false);
   const [loginFailed, setLoginFailed] = useState(false)
-  
+
   const [loadingMyBM, setLoadingMyBM] = useState(true);
   const [loadingOtherBM, setLoadingOtherBM] = useState(true);
 
@@ -70,14 +70,14 @@ export default function BookmarksPage() {
     }
   }
 
-  useEffect(()=>{
+  useEffect(() => {
     // Init effect
     setAuthenticated(AuthenticationService.isAuthenticated());
-   
+
 
   }, [])
 
-  useEffect(()=>{
+  useEffect(() => {
     if (authenticated) {
       loadMyBookmarks();
     }
@@ -85,7 +85,7 @@ export default function BookmarksPage() {
 
   useEffect(() => {
 
-      if (userSearch.length < 2 || !authenticated) {
+    if (userSearch.length < 2 || !authenticated) {
       setUserSearchResults([]);
       setShowSearchResults(false);
       return;
@@ -123,7 +123,7 @@ export default function BookmarksPage() {
   };
 
   const handleLogin = () => {
-    navigate("/");
+    navigate("/login");
   }
 
   const TryLogin = async () => {
@@ -168,12 +168,13 @@ export default function BookmarksPage() {
 
   const handleYank = async (id) => {
     const bookmark = otherBookmarks.find(bm => bm.id === id)
-    
+
     if (!bookmark) return;
 
     try {
       await BookmarkService.CreateNewBookmark({
         objectAPIIdentifier: bookmark.API_identifier,
+        whichAPI: bookmark.whichAPI,
         displayName: bookmark.displayName,
         latitude: bookmark.latitude,
         longitude: bookmark.longitude
@@ -194,9 +195,9 @@ export default function BookmarksPage() {
       <nav className="top-nav">
         <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
         <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home"      className="nav-link-item">Home</Link>
-          <Link to="/explore"   className="nav-link-item">Explore</Link>
-          <Link to="/calendar"  className="nav-link-item">Calendar</Link>
+          <Link to="/home" className="nav-link-item">Home</Link>
+          <Link to="/explore" className="nav-link-item">Explore</Link>
+          <Link to="/calendar" className="nav-link-item">Calendar</Link>
           <Link to="/bookmarks" className="nav-link-item active">Bookmarks</Link>
         </div>
         <div className="d-flex align-items-center gap-3">
@@ -250,7 +251,7 @@ export default function BookmarksPage() {
           )}
 
           {/* The users bookmakrs */}
-          {authenticated &&(
+          {authenticated && (
             <div className="bookmarks-table-wrap">
               <div className="table-responsive">
                 <h3 className="text-center">My Bookmarks</h3>
@@ -307,7 +308,7 @@ export default function BookmarksPage() {
                           <td className="bookmarks-td text-end">
                             {sig.API}
                           </td>
-                          
+
                           <td className="bookmarks-td text-end">
                             <button
                               className="btn btn-danger"
@@ -330,29 +331,32 @@ export default function BookmarksPage() {
           {authenticated && (
             <div className="bookmarks-table-wrap mt-5">
               <div className="table-responsive">
-                <div className="d-flex justify-content-between algin-items-center mb-3">
-                <h3 className="text-center">Search for other users Bookmarks</h3>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search users..."
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                  />
-                </div>
-                {showSearchResults && userSearchResults.length > 0 && (
-                  <div className="search-dropdown">
-                    {userSearchResults.map((user) => (
-                      <div
-                        key={user.email}
-                        className="search-item"
-                        onClick={() => handleUserSelect(user)}
-                      >
-                        {user.email}
+                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+                  <h3 className="mb-0">See what other Users have Bookmarked</h3>
+                  <div className="position-relative" style={{ maxWidth: "320px", width: "100%" }}>
+                    <span className="material-symbols-outlined input-icon">person_search</span>
+                    <input
+                      className="galileo-input form-control"
+                      type="text"
+                      placeholder="Search users..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                    />
+                    {showSearchResults && userSearchResults.length > 0 && (
+                      <div className="search-dropdown">
+                        {userSearchResults.map((user) => (
+                          <div
+                            key={user.email}
+                            className="search-item"
+                            onClick={() => handleUserSelect(user)}
+                          >
+                            {user.email}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                </div>
                 <table className="bookmarks-table w-100">
                   <thead>
                     <tr className="bookmarks-thead-row">
@@ -425,8 +429,8 @@ export default function BookmarksPage() {
               </div>
             </div>
           )}
-          
-         
+
+
 
           {/* Background decor */}
           <div className="bookmarks-decor">
