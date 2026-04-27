@@ -20,7 +20,7 @@ const BookmarkService = {
     // <span>{LongToDate(sig.timestamp)}</span>
 
     DateToLong : async (date) => {
-        const dateLong = Date(date).getTime();
+        const dateLong = new Date(date).getTime();
         return dateLong;
     },
 
@@ -37,7 +37,7 @@ const BookmarkService = {
         if (!AuthenticationService.isAuthenticated()) return;
 
         if (date === null){
-            date = Date.getTime();
+            date = new Date(date).getTime();
         }
 
         const userID = AuthenticationService.getUserID();
@@ -49,7 +49,7 @@ const BookmarkService = {
                 displayName: displayName,
                 API_identifier: objectAPIIdentifier,
                 timestamp: new Date().getTime(),
-                date: date || new Date().getTime(),
+                date: date,
                 latitude: latitude,
                 longitude: longitude
             },
@@ -101,6 +101,7 @@ const BookmarkService = {
     },
     UpdateBookmarkDate: async (bookmarkID, newDate) => {
         if (!AuthenticationService.isAuthenticated()) return;
+        console.log("newdate: ",newDate);
         try {
             const response = await axios.put(`${BOOKMARK_BACKEND_URL}/${bookmarkID}`, {
                 date: newDate
