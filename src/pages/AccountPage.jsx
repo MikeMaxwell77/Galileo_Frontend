@@ -4,6 +4,8 @@ import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
 import { GALILEO_BACKEND_ROOT } from "../GalileoBackendServices/backendPaths";
 import Navbar from "../components/Navbar";
+import earthImg from "../assets/earth.jpg";
+import "./BookmarkPage.css";
 
 const API_BASE_URL = GALILEO_BACKEND_ROOT;
 
@@ -106,7 +108,13 @@ export default function AccountPage() {
   if (loading) return <div className="page-root d-flex align-items-center justify-content-center">Synchronizing...</div>;
 
   return (
-    <div className="page-root">
+    <div className="page-root planet-bg-root">
+      <div
+        className="planet-bg"
+        style={{ backgroundImage: `url(${earthImg})` }}
+      />
+      <div className="planet-bg-fade" />
+
       <Navbar active="account" />
 
       <main className="page-main">
@@ -116,7 +124,7 @@ export default function AccountPage() {
             <p className="page-subtitle mb-0">Node ID: {account?.id}</p>
           </header>
 
-          <div className="row g-4">
+          <div className="row g-5">
             {/* Account Management Bento */}
             <div className="col-12 col-md-8">
               <div className="bento-card d-flex flex-column flex-md-row align-items-center gap-4">
@@ -195,7 +203,7 @@ export default function AccountPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="col-12 mt-2">
+            <div className="col-12">
               <div className="danger-zone d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
                 <div className="d-flex align-items-center gap-3">
                   <span className="material-symbols-outlined" style={{ color: "#d73357" }}>emergency_home</span>

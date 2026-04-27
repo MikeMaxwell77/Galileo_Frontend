@@ -193,6 +193,12 @@ export default function BookmarksPage() {
         {/* ── Content ── */}
         <div className="page-content">
 
+          <header className="mb-5">
+            <h1 className="font-headline fw-bold page-title mb-0">
+              Charted <span className="text-gradient">Constellations</span>
+            </h1>
+          </header>
+
           {/* User search input */}
           <div className="mb-4" style={{ maxWidth: "420px" }}>
             <div className="position-relative">
