@@ -1,28 +1,16 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import BookmarkService from "../GalileoBackendServices/BookmarksService";
 import AuthenticationService from "../auth/AuthenticationService";
+import Navbar from "../components/Navbar";
 
 import { GALILEO_BACKEND_SEARCH_ACCOUNT } from "../GalileoBackendServices/backendPaths"
 
+import jupiterImg from "../assets/jupiter.png";
+
 import "./BookmarkPage.css"
-
-const SIGNALS = [
-  { id: 1, icon: "pulse_alert", iconColor: "var(--clr-primary)", iconBg: "rgba(224,142,254,0.1)", title: "Alpha-Centauri-Prime", type: "Terrestrial Signal", url: "https://deepspace.observatory/ac-01.dat", date: "Oct 14, 2142", size: "1.42 PB", action: "View" },
-  { id: 2, icon: "warning", iconColor: "var(--clr-tertiary)", iconBg: "rgba(255,231,146,0.1)", title: "Nebula-Shroud-77", type: "Anomalous Data", url: "https://deepspace.observatory/anomaly-shroud.dat", date: "Nov 02, 2142", size: "894.2 TB", action: "Open" },
-  { id: 3, icon: "satellite_alt", iconColor: "var(--clr-primary)", iconBg: "rgba(224,142,254,0.1)", title: "Vesta-Orbiter-Scan", type: "Automated Telemetry", url: "https://vesta-mission.sol/telemetry/v-scan.log", date: "Dec 19, 2142", size: "12.5 GB", action: "View" },
-  { id: 4, icon: "star", iconColor: "var(--clr-secondary)", iconBg: "rgba(186,146,250,0.1)", title: "Orion-Belt-Echo", type: "Stellar Cartography", url: "https://orion-archive.org/echo-mapping.viz", date: "Jan 05, 2143", size: "4.88 PB", action: "Open" },
-];
-
-const NAV_ITEMS = [
-  { label: "Home", icon: "space_dashboard", path: "/home" },
-  { label: "Explore", icon: "explore", path: "/explore" },
-  { label: "Calendar", icon: "calendar_month", path: "/calendar" },
-  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks", active: true },
-  { label: "Account", icon: "person", path: "/account" },
-];
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
@@ -190,40 +178,14 @@ export default function BookmarksPage() {
   }
 
   return (
-    <div className="page-root">
+    <div className="page-root planet-bg-root">
+      <div
+        className="planet-bg"
+        style={{ backgroundImage: `url(${jupiterImg})` }}
+      />
+      <div className="planet-bg-fade" />
 
-      <nav className="top-nav">
-        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
-        <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home" className="nav-link-item">Home</Link>
-          <Link to="/explore" className="nav-link-item">Explore</Link>
-          <Link to="/calendar" className="nav-link-item">Calendar</Link>
-          <Link to="/bookmarks" className="nav-link-item active">Bookmarks</Link>
-        </div>
-        <div className="d-flex align-items-center gap-3">
-          {!authenticated && <button className="btn-warp btn-warp-sm" onClick={() => handleLogin()}>Login</button>}
-          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
-        </div>
-      </nav>
-
-      {/* ── Sidebar ── */}
-      <aside className="sidebar d-none d-lg-flex flex-column">
-        <div className="sidebar-inner">
-          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
-          <div className="sidebar-section-label">Navigation</div>
-          <nav className="d-flex flex-column gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-                <span className="material-symbols-outlined">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="sidebar-footer">
-          <button className="sidebar-new-obs-btn">New Observation</button>
-        </div>
-      </aside>
+      <Navbar active="bookmarks" />
 
       {/* ── Main ── */}
       <main className="page-main bookmarks-page">
@@ -311,7 +273,7 @@ export default function BookmarksPage() {
 
                           <td className="bookmarks-td text-end">
                             <button
-                              className="btn btn-danger"
+                              className="galileo-action-btn danger"
                               onClick={() => handleDelete(bm.id)}
                             >
                               Delete
@@ -413,7 +375,7 @@ export default function BookmarksPage() {
 
                           <td className="bookmarks-td text-end">
                             <button
-                              className="btn btn-primary"
+                              className="galileo-action-btn"
                               onClick={() => handleYank(bm.id)}
                             >
                               Yank!
@@ -431,12 +393,6 @@ export default function BookmarksPage() {
           )}
 
 
-
-          {/* Background decor */}
-          <div className="bookmarks-decor">
-            <div className="bookmarks-decor-gradient" />
-            <div className="bookmarks-decor-nebula" />
-          </div>
 
         </div>
 

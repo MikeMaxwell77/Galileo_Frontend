@@ -1,24 +1,15 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import "./CalendarPage.css";
 import { useGeoLocation } from "../components/geoLocation/GeoLocation";
 import { AstronomyBodiesInterface } from "../astronomyAPI/BodiesApi";
 import { WeatherService } from "../GalileoBackendServices/WeatherService";
-import AuthenticationService from "../auth/AuthenticationService";
+import Navbar from "../components/Navbar";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
-];
-
-const NAV_ITEMS = [
-  { label: "Home", icon: "space_dashboard", path: "/home" },
-  { label: "Explore", icon: "explore", path: "/explore" },
-  { label: "Calendar", icon: "calendar_month", path: "/calendar", active: true },
-  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
-  { label: "Account", icon: "person", path: "/account" },
 ];
 
 const getMoonPhaseData = (date) => {
@@ -37,22 +28,12 @@ const getMoonPhaseData = (date) => {
   return { phase: pct, name };
 };
 
-// SVG sun disc — static, always fully illuminated
+// SVG sun disc — full yellow disc, matches moon disc size
 const SunVisual = ({ size = 72 }) => {
   const r = (size - 4) / 2;
-  const rays = [0, 45, 90, 135, 180, 225, 270, 315];
   return (
     <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`}>
-      <circle r={r} fill="rgba(255,210,80,0.08)" stroke="rgba(255,210,80,0.2)" strokeWidth="1" />
-      {rays.map((angle, i) => {
-        const rad = (angle * Math.PI) / 180;
-        const x1 = Math.cos(rad) * (r * 0.65);
-        const y1 = Math.sin(rad) * (r * 0.65);
-        const x2 = Math.cos(rad) * (r * 0.88);
-        const y2 = Math.sin(rad) * (r * 0.88);
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,210,80,0.75)" strokeWidth="1.5" strokeLinecap="round" />;
-      })}
-      <circle r={r * 0.5} fill="rgba(255,210,80,0.95)" />
+      <circle r={r} fill="rgba(255,210,80,0.95)" stroke="rgba(255,240,200,0.5)" strokeWidth="1" />
     </svg>
   );
 };
@@ -185,7 +166,6 @@ const _getCache = (key) => {
 const _setCache = (key, data) => _cache.set(key, { data, ts: Date.now() });
 
 export default function CalendarPage() {
-  const navigate = useNavigate();
   const today = new Date();
   const { geoData, hasGeoData } = useGeoLocation();
 
@@ -196,11 +176,16 @@ export default function CalendarPage() {
   const [dayData, setDayData] = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
   const [bodyPositions, setBodyPositions] = useState(null);
   const [liveTime, setLiveTime] = useState(new Date());
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    setIsAuthenticated(AuthenticationService.isAuthenticated());
-  }, []);
+  const shiftSelectedDay = (dir) => {
+    if (modal.type !== "day" || !modal.data) return;
+    const { day, month, year } = modal.data;
+    const next = new Date(year, month, day + dir);
+    setModal({
+      type: "day",
+      data: { day: next.getDate(), month: next.getMonth(), year: next.getFullYear() },
+    });
+  };
 
   useEffect(() => {
     const t = setInterval(() => setLiveTime(new Date()), 1000);
@@ -331,37 +316,7 @@ export default function CalendarPage() {
 
   return (
     <div className="page-root">
-      <nav className="top-nav">
-        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
-        <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home" className="nav-link-item">Home</Link>
-          <Link to="/explore" className="nav-link-item">Explore</Link>
-          <Link to="/calendar" className="nav-link-item active">Calendar</Link>
-          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
-        </div>
-        <div className="d-flex align-items-center gap-3">
-          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/login")}>Login</button>}
-          <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-        </div>
-      </nav>
-
-      <aside className="sidebar d-none d-lg-flex flex-column">
-        <div className="sidebar-inner">
-          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
-          <div className="sidebar-section-label">Navigation</div>
-          <nav className="d-flex flex-column gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-                <span className="material-symbols-outlined">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="sidebar-footer">
-          <button className="sidebar-new-obs-btn">New Observation</button>
-        </div>
-      </aside>
+      <Navbar active="calendar" />
 
       <main className="page-main">
         <div className="page-content">
@@ -423,28 +378,42 @@ export default function CalendarPage() {
 
             {modal.type === "day" && (
               <>
-                <div className="mb-4" style={{ textAlign: "center" }}>
-                  <h2 className="font-headline fw-bold mb-0">
+                <div className="mb-4 d-flex justify-content-between align-items-center gap-3">
+                  <button
+                    className="nav-chevron-btn cal-day-edge-btn"
+                    onClick={() => shiftSelectedDay(-1)}
+                    aria-label="Previous day"
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                  <h2 className="font-headline fw-bold mb-0 text-center flex-grow-1">
                     {MONTH_NAMES[selMonth]} {selDay}, {selYear}
                   </h2>
+                  <button
+                    className="nav-chevron-btn cal-day-edge-btn"
+                    onClick={() => shiftSelectedDay(1)}
+                    aria-label="Next day"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
                 </div>
 
                 {!hasGeoData && (
-                  <p className="page-subtitle">
+                  <p className="page-subtitle text-center">
                     Share your location on the Explore page to see sky events and local weather.
                   </p>
                 )}
 
                 {hasGeoData && dayData.loading && (
-                  <p className="page-subtitle">Loading sky data...</p>
+                  <p className="page-subtitle text-center">Loading sky data...</p>
                 )}
 
                 {hasGeoData && !dayData.loading && (
-                  <div className="row g-4">
+                  <div className="row g-4 justify-content-center">
 
-                    <div className="col-12 col-md-6">
-                      <div className="mb-1"><WeatherIcon size={22} /></div>
-                      <h4 className="font-headline fw-bold mb-2"
+                    <div className="col-12 col-md-6 d-flex flex-column align-items-center text-center">
+                      <div className="mb-2"><WeatherIcon size={36} /></div>
+                      <h4 className="font-headline fw-bold mb-3"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-tertiary)" }}>
                         WEATHER
                       </h4>
@@ -469,8 +438,9 @@ export default function CalendarPage() {
                       )}
                     </div>
 
-                    <div className="col-12 col-md-3">
-                      <h4 className="font-headline fw-bold mb-2"
+                    <div className="col-12 col-md-3 d-flex flex-column align-items-center text-center">
+                      <div className="mb-2"><SunVisual size={36} /></div>
+                      <h4 className="font-headline fw-bold mb-3"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
                         SUN
                       </h4>
@@ -478,7 +448,7 @@ export default function CalendarPage() {
                         const rise = sunEvents.find(ev => ev.type === "rise");
                         const set = sunEvents.find(ev => ev.type === "set");
                         return (rise || set) ? (
-                          <div className="d-flex flex-column gap-1 mb-2">
+                          <div className="d-flex flex-column align-items-center gap-1 mb-2">
                             {rise && (
                               <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
                                 <SunriseIcon size={16} /><span>Sunrise: <strong>{formatTime(rise.time)}</strong></span>
@@ -506,8 +476,9 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
-                    <div className="col-12 col-md-3">
-                      <h4 className="font-headline fw-bold mb-2"
+                    <div className="col-12 col-md-3 d-flex flex-column align-items-center text-center">
+                      <div className="mb-2"><MoonIcon size={36} /></div>
+                      <h4 className="font-headline fw-bold mb-3"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
                         MOON
                       </h4>
@@ -515,7 +486,7 @@ export default function CalendarPage() {
                         const rise = moonEvents.find(ev => ev.type === "rise");
                         const set = moonEvents.find(ev => ev.type === "set");
                         return (rise || set) ? (
-                          <div className="d-flex flex-column gap-1 mb-2">
+                          <div className="d-flex flex-column align-items-center gap-1 mb-2">
                             {rise && (
                               <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
                                 <MoonriseIcon size={16} /><span>Moonrise: <strong>{formatTime(rise.time)}</strong></span>
@@ -555,13 +526,13 @@ export default function CalendarPage() {
                       const filtered = rows.filter(r => PRIORITY.includes(r.body?.id));
                       if (filtered.length === 0) return null;
                       return (
-                        <div className="col-12">
-                          <div className="mb-1"><PlanetIcon size={22} /></div>
-                          <h4 className="font-headline fw-bold mb-2"
+                        <div className="col-12 d-flex flex-column align-items-center text-center">
+                          <div className="mb-2"><PlanetIcon size={28} /></div>
+                          <h4 className="font-headline fw-bold mb-3"
                             style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-on-surface-variant)" }}>
                             PLANET POSITIONS
                           </h4>
-                          <div className="d-flex flex-wrap gap-4">
+                          <div className="d-flex flex-wrap justify-content-center gap-4">
                             {filtered.map((row, i) => {
                               const pos = (row.positions ?? []).find(p => typeof p.date === "string" && p.date.startsWith(dateStr));
                               if (!pos) return null;
@@ -585,8 +556,8 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                <div className="d-flex gap-2 mt-4">
-                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>Close</button>
+                <div className="d-flex justify-content-center mt-4">
+                  <button className="btn-warp" style={{ maxWidth: "240px" }} onClick={() => setModal({ type: null, data: null })}>Close</button>
                 </div>
               </>
             )}
