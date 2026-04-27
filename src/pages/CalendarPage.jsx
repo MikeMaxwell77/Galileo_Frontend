@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import "./CalendarPage.css";
+import "./BookmarkPage.css";
 import { useGeoLocation } from "../components/geoLocation/GeoLocation";
 import { AstronomyBodiesInterface } from "../astronomyAPI/BodiesApi";
 import { WeatherService } from "../GalileoBackendServices/WeatherService";
 import Navbar from "../components/Navbar";
+import moonImg from "../assets/moon.jpg";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -315,16 +317,30 @@ export default function CalendarPage() {
   const moonEvents = dayData.moonEvents?.data?.rows?.[0]?.events ?? [];
 
   return (
-    <div className="page-root">
+    <div className="page-root planet-bg-root">
+      <div
+        className="planet-bg"
+        style={{ backgroundImage: `url(${moonImg})` }}
+      />
+      <div className="planet-bg-fade" />
+
       <Navbar active="calendar" />
 
       <main className="page-main">
         <div className="page-content">
+          <header className="mb-4">
+            <h1 className="font-headline fw-bold page-title mb-0">
+              Celestial <span className="text-gradient">Calendar</span>
+            </h1>
+          </header>
+
           <div className="d-flex justify-content-between align-items-end mb-4">
             <div>
-              <h1 className="font-headline fw-bold page-title mb-1">
-                {MONTH_NAMES[currentMonth]} {currentYear}
-              </h1>
+              <h2 className="font-headline fw-bold page-title mb-1">
+                <span className="text-gradient">
+                  {MONTH_NAMES[currentMonth]} {currentYear}
+                </span>
+              </h2>
               <p className="page-subtitle mb-0">
                 {liveTime.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                 {" || "}
