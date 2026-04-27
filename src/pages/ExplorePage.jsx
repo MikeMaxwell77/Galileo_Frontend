@@ -6,8 +6,9 @@ import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astrono
 import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
 import AuthenticationService from "../auth/AuthenticationService";
 
-import ExplorePageEvent from "../components/DataViews/ExplorePageEvent";
-import BookmarkService from "../GalileoBackendServices/BookmarksService";
+import ExplorePageEvent from "../components/DataViews/ExplorePageEvent.jsx";
+import BookmarkService from "../GalileoBackendServices/BookmarksService.js";
+import EditBookmarkForm from "../components/forms/EditBookMarks.jsx";
 import { SatelliteInterface } from "../GalileoBackendServices/nasaSatelliteService.js";
 
 
@@ -459,16 +460,24 @@ export default function ExplorePage() {
           </div>
 
           <div className="row g-4">
-            {events.length > 0 && events.map((sig) => (
-              <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
-                <ExplorePageEvent
-                  data={sig}
-                  isSaved={bookmarkedSet.has(`${sig.source}:${sig.id}`)}
-                  onToggleBookmark={toggleBookmark}
-                  onOpen={() => setModal({ type: "event", data: sig })}
-                />
-              </div>
-            ))}
+            {events.length > 0 && events.map((sig) => {
+              const bookmarkKey = `${sig.source}:${sig.id}`;
+              const isSaved = bookmarkedSet.has(bookmarkKey);
+              const savedBookmark = myBookmarks.find(
+                bm => `${bm.whichAPI}:${bm.API_identifier}` === bookmarkKey
+              );
+              return (
+                <div key={sig.id} className="col-12 col-md-6 col-lg-4 col-xl-3">
+                  <ExplorePageEvent
+                    data={sig}
+                    isSaved={isSaved}
+                    onToggleBookmark={toggleBookmark}
+                    onOpen={() => setModal({ type: "event", data: sig })}
+                    onEdit={() => setModal({ type: "edit", data: { sig, bookmarkID: savedBookmark?.id } })}
+                  />
+                </div>
+              );
+            })}
           </div>
 
         </div>
@@ -530,6 +539,24 @@ export default function ExplorePage() {
               </>
             )}
 
+
+            {/* EDIT BOOKMARK MODAL */}
+            {modal.type === "edit" && (
+              <>
+                <h2 className="font-headline fw-bold mb-1">Edit Bookmark</h2>
+                <p className="mb-3" style={{ color: "var(--clr-secondary)" }}>
+                  {modal.data.sig.title}
+                </p>
+                <EditBookmarkForm
+                  existingBookmarkId={modal.data.bookmarkID}
+                  onSuccess={() => {
+                    setModal({ type: null, data: null });
+                    loadBookmarks();
+                  }}
+                  onCancel={() => setModal({ type: null, data: null })}
+                />
+              </>
+            )}
 
             {/* LOCATION MODAL */}
             {modal.type === "location" && (

@@ -1,3 +1,4 @@
+// BookmarkServices.js
 import axios from "axios"
 import AuthenticationService from "../auth/AuthenticationService";
 
@@ -7,15 +8,37 @@ const BOOKMARKS_BACKEND_URL = `${import.meta.env.VITE_GALILEO_BACKEND_API_ROUTE}
 const BookmarkService = {
     BOOKMARKS_BACKEND_URL,
     BOOKMARK_BACKEND_URL,
+    // Utility Funcitons
+    LongToDate : async (ms) => {
+        const date = new Date(ms);
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        return `${mm}/${dd}/${yyyy}`;
+    },
+    // Example usage UI:
+    // <span>{LongToDate(sig.timestamp)}</span>
 
+    DateToLong : async (date) => {
+        const dateLong = Date(date).getTime();
+        return dateLong;
+    },
+
+
+    // Bookmark Functions
     CreateNewBookmark : async ({  
             objectAPIIdentifier, 
             whichAPI,
             displayName,
+            date,
             latitude, 
             longitude 
     }) => {
         if (!AuthenticationService.isAuthenticated()) return;
+
+        if (date === null){
+            date = Date.getTime();
+        }
 
         const userID = AuthenticationService.getUserID();
 
@@ -26,6 +49,7 @@ const BookmarkService = {
                 displayName: displayName,
                 API_identifier: objectAPIIdentifier,
                 timestamp: new Date().getTime(),
+                date: date || new Date().getTime(),
                 latitude: latitude,
                 longitude: longitude
             },
@@ -74,6 +98,20 @@ const BookmarkService = {
             throw error;
         }
 
+    },
+    UpdateBookmarkDate: async (bookmarkID, newDate) => {
+        if (!AuthenticationService.isAuthenticated()) return;
+        try {
+            const response = await axios.put(`${BOOKMARK_BACKEND_URL}/${bookmarkID}`, {
+                date: newDate
+            }, {
+                headers: AuthenticationService.getAuthHeader()
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Update bookmark date error:", error);
+            throw error;
+        }
     },
     DeleteBookmarkByID: async (bookmarkID) => {
         if (!AuthenticationService.isAuthenticated()) return;
