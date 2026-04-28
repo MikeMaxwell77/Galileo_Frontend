@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
 import "./BookmarkPage.css";
 import jupiterImg from "../assets/jupiter.png";
 
@@ -53,6 +54,8 @@ export default function SolarSystemViewerPage() {
           </p>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

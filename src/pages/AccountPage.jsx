@@ -4,6 +4,7 @@ import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
 import { GALILEO_BACKEND_ROOT } from "../GalileoBackendServices/backendPaths";
 import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
 import earthImg from "../assets/earth.jpg";
 import "./BookmarkPage.css";
 
@@ -228,6 +229,8 @@ export default function AccountPage() {
           </div>
         </div>
       </main>
+
+      <SiteFooter />
       {showModal && (
         <div className="modal-overlay" style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',

@@ -5,6 +5,7 @@ import axios from "axios";
 import BookmarkService from "../GalileoBackendServices/BookmarksService";
 import AuthenticationService from "../auth/AuthenticationService";
 import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
 
 import { GALILEO_BACKEND_SEARCH_ACCOUNT } from "../GalileoBackendServices/backendPaths"
 
@@ -471,6 +472,8 @@ export default function BookmarksPage() {
           </div>
         )}
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

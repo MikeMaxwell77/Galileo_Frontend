@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
+import SiteFooter from "../components/SiteFooter";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -168,14 +169,7 @@ export default function LoginPage() {
         </div>
       </main>
 
-      <footer className="mt-auto py-4 w-100 d-flex flex-column align-items-center gap-3">
-        <div className="d-flex gap-4">
-          <a href="#" className="footer-link">Privacy Protocol</a>
-          <a href="#" className="footer-link">Terms of Orbit</a>
-          <a href="#" className="footer-link">Support Relay</a>
-        </div>
-        <div className="footer-copyright">© 2026 Galileo Interstellar Systems • v4.0.2-Stable</div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

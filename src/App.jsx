@@ -19,6 +19,9 @@ import AccountPage from "./pages/AccountPage";
 import LoginPage from "./pages/LoginPage";
 import BookmarksPage from "./pages/BookmarkPage";
 import SolarSystemViewerPage from "./pages/SolarSystemViewerPage";
+import PrivacyProtocol from "./pages/PrivacyProtocol";
+import TermsOfOrbit from "./pages/TermsOfOrbit";
+import Acknowledgments from "./pages/Acknowledgments";
 import BookmarksDebug from './pages/testing/bookmarkTest'
 import AccountPageTest from './pages/AccountPageTest';
 import SatelliteApiTest from './components/NASA_API/SatalliteAPI_Test';
@@ -43,6 +46,9 @@ function App() {
           <Route path="/account" element={<AccountPage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
           <Route path="/solar-system" element={<SolarSystemViewerPage />} />
+          <Route path="/privacy" element={<PrivacyProtocol />} />
+          <Route path="/terms" element={<TermsOfOrbit />} />
+          <Route path="/acknowledgments" element={<Acknowledgments />} />
 
           {/* DEBUG ROUTES */}
           <Route path="/debug/home" element={<Home />} />

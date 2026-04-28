@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
 import saturnImg from "../assets/saturn.jpg";
 import "./BookmarkPage.css";
 
@@ -43,6 +44,8 @@ export default function HomePage() {
 
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }
