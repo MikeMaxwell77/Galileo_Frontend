@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { key: "explore", label: "Explore", icon: "explore", path: "/explore" },
   { key: "calendar", label: "Calendar", icon: "calendar_month", path: "/calendar" },
   { key: "bookmarks", label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
+  { key: "solar", label: "Solar System", icon: "language", path: "/solar-system", topNavOnly: true },
   { key: "account", label: "Account", icon: "person", path: "/account" },
 ];
 
@@ -78,7 +79,7 @@ export default function Navbar({ active }) {
       {mobileMenuOpen && (
         <div className="mobile-drawer d-lg-none" onClick={() => setMobileMenuOpen(false)}>
           <div className="mobile-drawer-inner" onClick={e => e.stopPropagation()}>
-            {NAV_ITEMS.map(item => (
+            {NAV_ITEMS.filter(i => !i.topNavOnly).map(item => (
               <Link
                 key={item.key}
                 to={item.path}
@@ -99,7 +100,7 @@ export default function Navbar({ active }) {
           <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
           <div className="sidebar-section-label">Navigation</div>
           <nav className="d-flex flex-column gap-1">
-            {NAV_ITEMS.map(item => (
+            {NAV_ITEMS.filter(i => !i.topNavOnly).map(item => (
               <Link
                 key={item.key}
                 to={item.path}
@@ -120,7 +121,7 @@ export default function Navbar({ active }) {
 
       {/* Mobile bottom nav */}
       <div className="mobile-nav-bar d-lg-none">
-        {NAV_ITEMS.map(item => (
+        {NAV_ITEMS.filter(i => !i.topNavOnly).map(item => (
           <Link
             key={item.key}
             to={item.path}
