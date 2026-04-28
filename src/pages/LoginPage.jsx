@@ -58,19 +58,19 @@ export default function LoginPage() {
   }, [])
 
   return (
-    <div className="bg-nebula" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+    <div className="bg-nebula login-page" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
       <div className="glow-orb-left" />
       <div className="glow-orb-right" />
 
-      <header className="position-fixed top-0 w-100 d-flex justify-content-between align-items-center px-4 py-4" style={{ zIndex: -2 }}>
+      <header className="position-fixed top-0 w-100 d-flex justify-content-between align-items-center px-3 px-md-4 py-3 py-md-4" style={{ zIndex: 1 }}>
         <div className="font-headline fw-bold fs-4 galileo-logo">Galileo</div>
       </header>
 
-      <main className="container" style={{ maxWidth: "1100px" }}>
-        <div className="row align-items-center g-5">
+      <main className="container py-5" style={{ maxWidth: "1100px" }}>
+        <div className="row align-items-center g-4 g-lg-5">
 
           {/* Left Column: Hero Text */}
-          <div className="col-md-6 d-none d-md-flex flex-column gap-4">
+          <div className="col-lg-6 d-none d-lg-flex flex-column gap-4">
             <span className="font-headline fw-bold section-eyebrow">Celestial Cartography</span>
             <h1 className="font-headline fw-bold hero-heading">
               Map the <br />
@@ -82,8 +82,8 @@ export default function LoginPage() {
           </div>
 
           {/* Right Column: Glass Form */}
-          <div className="col-md-6 d-flex justify-content-center justify-content-lg-end">
-            <div className="glass-panel p-4 p-md-5 position-relative" style={{ width: "100%", maxWidth: "440px" }}>
+          <div className="col-12 col-lg-6 d-flex justify-content-center justify-content-lg-end">
+            <div className="glass-panel p-3 p-md-5 position-relative" style={{ width: "100%", maxWidth: "440px" }}>
 
               <div className="d-flex gap-4 mb-4 tab-row">
                 <button 

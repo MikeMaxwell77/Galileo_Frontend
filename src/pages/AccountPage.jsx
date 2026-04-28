@@ -1,18 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
 import { GALILEO_BACKEND_ROOT } from "../GalileoBackendServices/backendPaths";
+import Navbar from "../components/Navbar";
+import earthImg from "../assets/earth.jpg";
+import "./BookmarkPage.css";
 
 const API_BASE_URL = GALILEO_BACKEND_ROOT;
-
-const NAV_ITEMS = [
-  { label: "Home", icon: "space_dashboard", path: "/" },
-  { label: "Explore", icon: "explore", path: "/explore" },
-  { label: "Calendar", icon: "calendar_month", path: "/calendar" },
-  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
-  { label: "Account", icon: "person", path: "/account", active: true },
-];
 
 export default function AccountPage() {
   const [account, setAccount] = useState(null);
@@ -113,37 +108,14 @@ export default function AccountPage() {
   if (loading) return <div className="page-root d-flex align-items-center justify-content-center">Synchronizing...</div>;
 
   return (
-    <div className="page-root">
-      {/* Top Nav */}
-      <nav className="top-nav">
-        <div className="d-flex align-items-center gap-4">
-          <span className="galileo-logo font-headline fw-bold fs-4">Galileo</span>
-        </div>
-        <div className="d-flex align-items-center gap-3">
-          <button onClick={() => { AuthenticationService.Logout(); }} className="icon-btn">
-            <span className="material-symbols-outlined">logout</span>
-          </button>
-        </div>
-      </nav>
+    <div className="page-root planet-bg-root">
+      <div
+        className="planet-bg"
+        style={{ backgroundImage: `url(${earthImg})` }}
+      />
+      <div className="planet-bg-fade" />
 
-      <aside className="sidebar d-none d-lg-flex flex-column">
-        <div className="sidebar-inner">
-          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
-          <div className="sidebar-section-label">Navigation</div>
-          <nav className="d-flex flex-column gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-                <span className="material-symbols-outlined">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="sidebar-footer d-flex flex-column gap-1" style={{ borderTop: "1px solid rgba(72,71,74,0.15)" }}>
-          <a href="/settings" className="sidebar-link"><span className="material-symbols-outlined">settings</span>Settings</a>
-          <a href="/support" className="sidebar-link"><span className="material-symbols-outlined">help</span>Support</a>
-        </div>
-      </aside>
+      <Navbar active="account" />
 
       <main className="page-main">
         <div className="page-content">
@@ -152,7 +124,7 @@ export default function AccountPage() {
             <p className="page-subtitle mb-0">Node ID: {account?.id}</p>
           </header>
 
-          <div className="row g-4">
+          <div className="row g-5">
             {/* Account Management Bento */}
             <div className="col-12 col-md-8">
               <div className="bento-card d-flex flex-column flex-md-row align-items-center gap-4">
@@ -231,7 +203,7 @@ export default function AccountPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="col-12 mt-2">
+            <div className="col-12">
               <div className="danger-zone d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
                 <div className="d-flex align-items-center gap-3">
                   <span className="material-symbols-outlined" style={{ color: "#d73357" }}>emergency_home</span>

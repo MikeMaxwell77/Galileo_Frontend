@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./ExplorePage.css";
+import "./BookmarkPage.css";
 
 import { AstronomyBodiesInterface, AstronomySearchInterface } from './../astronomyAPI/BodiesApi'
 import { useGeoLocation } from "./../components/geoLocation/GeoLocation";
@@ -9,7 +10,10 @@ import AuthenticationService from "../auth/AuthenticationService";
 import ExplorePageEvent from "../components/DataViews/ExplorePageEvent.jsx";
 import BookmarkService from "../GalileoBackendServices/BookmarksService.js";
 import EditBookmarkForm from "../components/forms/EditBookMarks.jsx";
+import Navbar from "../components/Navbar";
 import { SatelliteInterface } from "../GalileoBackendServices/nasaSatelliteService.js";
+
+import neptuneImg from "../assets/neptune.jpg";
 
 
 
@@ -19,14 +23,6 @@ const SIGNALS = [
   { id: 2, icon: "database", iconColor: "var(--clr-secondary)", glowColor: "rgba(186,146,250,0.05)", title: "Nebula Core API", desc: "Connect your observation deck directly to the central nebula data stream for real-time tracking.", tags: [{ label: "Developer", color: "var(--clr-secondary)", border: "rgba(186,146,250,0.2)" }, { label: "API", color: "var(--clr-primary)", border: "rgba(224,142,254,0.2)" }], scanned: "1.2h ago", saved: false },
   { id: 3, icon: "public", iconColor: "var(--clr-primary)", glowColor: "rgba(224,142,254,0.05)", title: "Exoplanet Registry", desc: "Detailed biological and geological scans of newly discovered habitable worlds in the Goldilocks zone.", tags: [], scanned: "4h ago", saved: false },
   { id: 4, icon: "auto_awesome", iconColor: "var(--clr-secondary)", glowColor: "rgba(186,146,250,0.05)", title: "Quantum Frameworks", desc: "Next-gen code structures for simulating sub-atomic particle movements in high-density nebulae.", tags: [], scanned: "15m ago", saved: false },
-];
-
-const NAV_ITEMS = [
-  { label: "Home", icon: "space_dashboard", path: "/home" },
-  { label: "Explore", icon: "explore", path: "/explore", active: true },
-  { label: "Calendar", icon: "calendar_month", path: "/calendar" },
-  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
-  { label: "Account", icon: "person", path: "/account" },
 ];
 
 export default function ExplorePage() {
@@ -392,38 +388,14 @@ export default function ExplorePage() {
   }, [isLogedIn])
 
   return (
-    <div className="page-root">
-      <nav className="top-nav">
-        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
-        <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home" className="nav-link-item">Home</Link>
-          <Link to="/explore" className="nav-link-item active">Explore</Link>
-          <Link to="/calendar" className="nav-link-item">Calendar</Link>
-          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
-        </div>
-        <div className="d-flex align-items-center gap-3">
-          {!isLogedIn && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/login")}>Login</button>}
-          <button className="icon-btn" onClick={() => handleAccountSymbol()}><span className="material-symbols-outlined">account_circle</span></button>
-        </div>
-      </nav>
+    <div className="page-root planet-bg-root">
+      <div
+        className="planet-bg"
+        style={{ backgroundImage: `url(${neptuneImg})` }}
+      />
+      <div className="planet-bg-fade" />
 
-      <aside className="sidebar d-none d-lg-flex flex-column">
-        <div className="sidebar-inner">
-          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
-          <div className="sidebar-section-label">Navigation</div>
-          <nav className="d-flex flex-column gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-                <span className="material-symbols-outlined">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="sidebar-footer">
-          <button className="sidebar-new-obs-btn">New Observation</button>
-        </div>
-      </aside>
+      <Navbar active="explore" />
 
       <main className="page-main">
         <div className="page-content">
@@ -483,57 +455,65 @@ export default function ExplorePage() {
         </div>
       </main>
 
-      <div className="mobile-nav-bar d-lg-none">
-        <button className="mobile-nav-btn"><span className="material-symbols-outlined">space_dashboard</span></button>
-        <button className="mobile-nav-btn active"><span className="material-symbols-outlined">explore</span></button>
-        <button className="mobile-nav-btn"><span className="material-symbols-outlined">calendar_month</span></button>
-        <button className="mobile-nav-btn"><span className="material-symbols-outlined">bookmarks</span></button>
-      </div>
-
       {/* MODAL - the popup if something is interacted with*/}
       {modal.type && (
         <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
 
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content galileo-modal" onClick={(e) => e.stopPropagation()}>
 
             {/* EVENT MODAL */}
             {modal.type === "event" && (
               <>
-                <div>
-                  <h1 className="text-center">{modal.data.title}</h1>
-                  <h3 className="text-center">{modal.data.desc}</h3>
+                <div className="text-center mb-3">
+                  <h2 className="font-headline fw-bold mb-1">{modal.data.title}</h2>
+                  <p className="page-subtitle mb-0" style={{ fontSize: "0.95rem" }}>{modal.data.desc}</p>
                 </div>
 
+                {modal.data.tags?.length > 0 && (
+                  <div className="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                    {modal.data.tags.map(tag => (
+                      <span
+                        key={tag.label}
+                        className="tag-chip"
+                        style={{ color: tag.color, border: `1px solid ${tag.border}` }}
+                      >
+                        {tag.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
-
-                <div className="d-flex gap-2 mb-3">
-
-                  {modal.data.tags?.map(tag => (
-                    <span key={tag.label}>{tag.label}</span>
-                  ))}
+                <div className="bento-card mb-3" style={{ padding: "1rem" }}>
+                  <div className="security-row">
+                    <span className="security-panel-label mb-0">Scanned</span>
+                    <span style={{ fontSize: "0.85rem" }}>{modal.data.scanned}</span>
+                  </div>
                 </div>
 
-
-                <p><strong>Scanned:</strong> {modal.data.scanned}</p>
-
-                {/*Guard for satellites which have no equatorial position */}
+                {/* Guard for satellites which have no equatorial position */}
                 {modal.data.equatorial_pos ? (
-                  <div>
-                    <h4><strong>Equatorial Position Data</strong></h4>
-                    <p>Declination: {modal.data.equatorial_pos.declination.string}</p>
-                    <p>RightAscension: {modal.data.equatorial_pos.rightAscension.string}</p>
+                  <div className="bento-card mb-3" style={{ padding: "1rem" }}>
+                    <div className="security-panel-label mb-2">Equatorial Position</div>
+                    <div className="security-row">
+                      <span>Declination</span>
+                      <span style={{ fontSize: "0.85rem" }}>{modal.data.equatorial_pos.declination.string}</span>
+                    </div>
+                    <div className="security-row">
+                      <span>Right Ascension</span>
+                      <span style={{ fontSize: "0.85rem" }}>{modal.data.equatorial_pos.rightAscension.string}</span>
+                    </div>
                   </div>
                 ) : (
-                  <div>
-                    <h4><strong>Orbital Object</strong></h4>
-                    <p>Source: NASA Satellite Situation Center</p>
-                    <p>Trajectory data available from {modal.data.scanned?.slice(0, 10)}</p>
+                  <div className="bento-card mb-3" style={{ padding: "1rem" }}>
+                    <div className="security-panel-label mb-2">Orbital Object</div>
+                    <p className="card-desc mb-1">Source: NASA Satellite Situation Center</p>
+                    <p className="card-desc mb-0">Trajectory data available from {modal.data.scanned?.slice(0, 10)}</p>
                   </div>
                 )}
 
                 <div className="d-flex gap-2 mt-3">
                   <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>
-                    Cancel | Close
+                    Close
                   </button>
                 </div>
               </>
@@ -561,18 +541,26 @@ export default function ExplorePage() {
             {/* LOCATION MODAL */}
             {modal.type === "location" && (
               <>
-                <h2>Share Location</h2>
-                <p>Enter your location manually or enable browser location access.</p>
+                <div className="text-center mb-3">
+                  <h2 className="font-headline fw-bold mb-1">Share Location</h2>
+                  <p className="page-subtitle mb-0" style={{ fontSize: "0.95rem" }}>
+                    Enter your location manually or enable browser location access.
+                  </p>
+                </div>
 
-                {(!hasGeoData && !geoAPIDenied) && <button className="btn btn-primary" onClick={checkGeoAutoAPI}>Get GeoLocation Data</button>}
+                {(!hasGeoData && !geoAPIDenied) && (
+                  <button className="btn-warp mb-3" onClick={checkGeoAutoAPI}>
+                    Get GeoLocation Data
+                  </button>
+                )}
 
                 {!hasGeoData && geoAPIDenied && (
-                  <div>
-                    <input id="lat" placeholder="Latitude" type="number" />
-                    <input id="long" placeholder="Longitude" type="number" />
-                    <input id="elev" placeholder="Elevation" type="number" />
-
-                    <button className="btn-warp"
+                  <div className="d-flex flex-column gap-2 mb-3">
+                    <input id="lat" placeholder="Latitude" type="number" className="galileo-input form-control" style={{ paddingLeft: "1rem" }} />
+                    <input id="long" placeholder="Longitude" type="number" className="galileo-input form-control" style={{ paddingLeft: "1rem" }} />
+                    <input id="elev" placeholder="Elevation" type="number" className="galileo-input form-control" style={{ paddingLeft: "1rem" }} />
+                    <button
+                      className="btn-warp"
                       onClick={() =>
                         handleManualSubmit(
                           document.getElementById("lat").value,
@@ -586,48 +574,50 @@ export default function ExplorePage() {
                   </div>
                 )}
 
-                < div className="container mt-4">
-                  {!geoAPIDenied ? (
-                    <h3>Automatic GeoLocation data</h3>
+                <div className="bento-card mb-3" style={{ padding: "1rem" }}>
+                  <div className="security-panel-label mb-2">
+                    {!geoAPIDenied ? "Automatic GeoLocation Data" : "Manual GeoLocation Data"}
+                  </div>
+                  {hasGeoData ? (
+                    <>
+                      <div className="security-row"><span>Latitude</span><span style={{ fontSize: "0.85rem" }}>{geoData.latitude}</span></div>
+                      <div className="security-row"><span>Longitude</span><span style={{ fontSize: "0.85rem" }}>{geoData.longitude}</span></div>
+                      <div className="security-row"><span>Elevation</span><span style={{ fontSize: "0.85rem" }}>{geoData.elevation}</span></div>
+                      <div className="security-row"><span>Timestamp</span><span style={{ fontSize: "0.8rem", color: "var(--clr-on-surface-variant)" }}>{geoData.createdAt.toString()}</span></div>
+                    </>
                   ) : (
-
-                    <h3>Manual GeoLocation data</h3>
-                  )
-                  }
-                </div>
-
-                <div className="container mt-4">
-                  {hasGeoData && (
-                    <div>
-                      <h3>Current GeoLocation Data:</h3>
-                      <p>Latitude: {geoData.latitude}</p>
-                      <p>Longitude: {geoData.longitude}</p>
-                      <p>Elevation: {geoData.elevation}</p>
-                      <p>Timestamp: {geoData.createdAt.toString()}</p>
-                    </div>
+                    <p className="card-desc mb-0">No location data yet.</p>
                   )}
                 </div>
 
-                <div className="d-flex gap-2 mt-3">
-                  <button
-                    className="btn-warp"
-                    onClick={() => setModal({ type: null, data: null })}
-                  >
-                    Cancel | Close
-                  </button>
-                </div>
+                <button
+                  className="btn-warp"
+                  onClick={() => setModal({ type: null, data: null })}
+                >
+                  Close
+                </button>
               </>
             )}
 
             {/* LOGIN MODAL */}
             {modal.type === "login" && (
               <>
-                <h2>Login</h2>
+                <div className="text-center mb-3">
+                  <h2 className="font-headline fw-bold mb-1">Login</h2>
+                </div>
 
-                {loginFailed && (<p className="fw-bold text-danger">Login Failed!</p>)}
+                {loginFailed && (<p className="fw-bold text-danger text-center">Login Failed!</p>)}
 
-                <input id="email" placeholder="email" className="form-control mb-2" />
-                <input id="password" type="password" placeholder="Password" className="form-control mb-2" />
+                <div className="d-flex flex-column gap-2 mb-3">
+                  <div className="position-relative">
+                    <span className="material-symbols-outlined input-icon">alternate_email</span>
+                    <input id="email" placeholder="email" className="galileo-input form-control" />
+                  </div>
+                  <div className="position-relative">
+                    <span className="material-symbols-outlined input-icon">lock</span>
+                    <input id="password" type="password" placeholder="Password" className="galileo-input form-control" />
+                  </div>
+                </div>
 
                 <div className="d-flex gap-2 mt-3">
                   <button
@@ -638,7 +628,7 @@ export default function ExplorePage() {
                   </button>
 
                   <button
-                    className="btn-warp"
+                    className="galileo-action-btn"
                     onClick={() => setModal({ type: null, data: null })}
                   >
                     Cancel
