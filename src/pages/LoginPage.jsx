@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import AuthenticationService from "../auth/AuthenticationService";
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
       <div className="glow-orb-right" />
 
       <header className="position-fixed top-0 w-100 d-flex justify-content-between align-items-center px-3 px-md-4 py-3 py-md-4" style={{ zIndex: 1 }}>
-        <div className="font-headline fw-bold fs-4 galileo-logo">Galileo</div>
+        <Link to="/" className="font-headline fw-bold fs-4 galileo-logo text-decoration-none">Galileo</Link>
       </header>
 
       <main className="container py-5" style={{ maxWidth: "1100px" }}>

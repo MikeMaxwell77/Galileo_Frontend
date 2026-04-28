@@ -77,6 +77,105 @@ const formatTime = (isoString) => {
   catch { return "—"; }
 };
 
+const _toRad = (d) => d * Math.PI / 180;
+const _toDeg = (r) => r * 180 / Math.PI;
+const _clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const _norm360 = (d) => ((d % 360) + 360) % 360;
+
+const _utDateFromDecimalHours = (refDate, ut) => {
+  const norm = ((ut % 24) + 24) % 24;
+  const h = Math.floor(norm);
+  const m = Math.round((norm - h) * 60);
+  return new Date(Date.UTC(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), h, m));
+};
+
+// NOAA-derived sunrise/sunset approximation (accurate to ~1 minute for mid-latitudes).
+const computeSunRiseSet = (date, lat, lon) => {
+  const start = new Date(Date.UTC(date.getFullYear(), 0, 0));
+  const N = Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - start.getTime()) / 86400000);
+  const lngHour = lon / 15;
+
+  const calc = (rising) => {
+    const t = N + ((rising ? 6 : 18) - lngHour) / 24;
+    const M = (0.9856 * t) - 3.289;
+    let L = M + (1.916 * Math.sin(_toRad(M))) + (0.020 * Math.sin(_toRad(2 * M))) + 282.634;
+    L = _norm360(L);
+    let RA = _toDeg(Math.atan(0.91764 * Math.tan(_toRad(L))));
+    RA = _norm360(RA);
+    RA = (RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90)) / 15;
+    const sinDec = 0.39782 * Math.sin(_toRad(L));
+    const cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(_toRad(90.833)) - sinDec * Math.sin(_toRad(lat))) / (cosDec * Math.cos(_toRad(lat)));
+    if (cosH > 1 || cosH < -1) return null;
+    let H = rising ? 360 - _toDeg(Math.acos(cosH)) : _toDeg(Math.acos(cosH));
+    H = H / 15;
+    const T = H + RA - (0.06571 * t) - 6.622;
+    return _utDateFromDecimalHours(date, T - lngHour);
+  };
+
+  return { rise: calc(true), set: calc(false) };
+};
+
+// Geocentric moon altitude for a UTC instant. Simplified — accurate to ~0.5° but
+// good enough for rise/set within a few minutes.
+const _moonAltitude = (whenUtc, lat, lon) => {
+  const d = (whenUtc.getTime() / 86400000) + 2440587.5 - 2451545.0;
+  const N = _norm360(125.1228 - 0.0529538083 * d);
+  const i = 5.1454;
+  const w = _norm360(318.0634 + 0.1643573223 * d);
+  const a = 60.2666;
+  const e = 0.054900;
+  const M = _norm360(115.3654 + 13.0649929509 * d);
+  let E = M + _toDeg(e * Math.sin(_toRad(M)) * (1 + e * Math.cos(_toRad(M))));
+  for (let k = 0; k < 8; k++) {
+    const dE = (E - _toDeg(e) * Math.sin(_toRad(E)) - M) / (1 - e * Math.cos(_toRad(E)));
+    E -= dE;
+    if (Math.abs(dE) < 1e-5) break;
+  }
+  const xv = a * (Math.cos(_toRad(E)) - e);
+  const yv = a * Math.sqrt(1 - e * e) * Math.sin(_toRad(E));
+  const v = _toDeg(Math.atan2(yv, xv));
+  const r = Math.sqrt(xv * xv + yv * yv);
+  const xeclip = r * (Math.cos(_toRad(N)) * Math.cos(_toRad(v + w)) - Math.sin(_toRad(N)) * Math.sin(_toRad(v + w)) * Math.cos(_toRad(i)));
+  const yeclip = r * (Math.sin(_toRad(N)) * Math.cos(_toRad(v + w)) + Math.cos(_toRad(N)) * Math.sin(_toRad(v + w)) * Math.cos(_toRad(i)));
+  const zeclip = r * Math.sin(_toRad(v + w)) * Math.sin(_toRad(i));
+  const obl = 23.4393 - 3.563e-7 * d;
+  const yEq = yeclip * Math.cos(_toRad(obl)) - zeclip * Math.sin(_toRad(obl));
+  const zEq = yeclip * Math.sin(_toRad(obl)) + zeclip * Math.cos(_toRad(obl));
+  const ra = _toDeg(Math.atan2(yEq, xeclip));
+  const dec = _toDeg(Math.atan2(zEq, Math.sqrt(xeclip * xeclip + yEq * yEq)));
+  const utHours = whenUtc.getUTCHours() + whenUtc.getUTCMinutes() / 60 + whenUtc.getUTCSeconds() / 3600;
+  const gmst = _norm360(280.46061837 + 360.98564736629 * d + 0.000387933 * (d / 36525) * (d / 36525));
+  const lst = _norm360(gmst + lon);
+  const ha = _norm360(lst - ra);
+  const sinAlt = Math.sin(_toRad(lat)) * Math.sin(_toRad(dec)) + Math.cos(_toRad(lat)) * Math.cos(_toRad(dec)) * Math.cos(_toRad(ha));
+  return _toDeg(Math.asin(_clamp(sinAlt, -1, 1)));
+};
+
+// Sweep moon altitude across the local day (in 30-min steps), find sign-change for rise/set.
+const computeMoonRiseSet = (date, lat, lon) => {
+  const tzOffsetMin = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTimezoneOffset();
+  const dayStartLocalUtc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) + tzOffsetMin * 60000);
+  const refraction = -0.583;
+  let prev = _moonAltitude(dayStartLocalUtc, lat, lon) - refraction;
+  let rise = null, set = null;
+  const steps = 48;
+  for (let s = 1; s <= steps; s++) {
+    const when = new Date(dayStartLocalUtc.getTime() + s * 30 * 60000);
+    const cur = _moonAltitude(when, lat, lon) - refraction;
+    if (!rise && prev < 0 && cur >= 0) {
+      const frac = -prev / (cur - prev);
+      rise = new Date(dayStartLocalUtc.getTime() + (s - 1 + frac) * 30 * 60000);
+    }
+    if (!set && prev >= 0 && cur < 0) {
+      const frac = prev / (prev - cur);
+      set = new Date(dayStartLocalUtc.getTime() + (s - 1 + frac) * 30 * 60000);
+    }
+    prev = cur;
+  }
+  return { rise, set };
+};
+
 const WeatherIcon = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M6 19a4 4 0 1 1 0-8 1 1 0 0 1 0-.08A4.5 4.5 0 1 1 13.5 15H6z" fill="rgba(180,220,255,0.5)" stroke="rgba(180,220,255,0.7)" strokeWidth="1" />
@@ -342,6 +441,25 @@ export default function CalendarPage() {
   const sunEvents = dayData.sunEvents?.data?.rows?.[0]?.events ?? [];
   const moonEvents = dayData.moonEvents?.data?.rows?.[0]?.events ?? [];
 
+  const apiSunRise = sunEvents.find(ev => ev.type === "rise")?.time ?? null;
+  const apiSunSet  = sunEvents.find(ev => ev.type === "set")?.time ?? null;
+  const apiMoonRise = moonEvents.find(ev => ev.type === "rise")?.time ?? null;
+  const apiMoonSet  = moonEvents.find(ev => ev.type === "set")?.time ?? null;
+
+  const lat = hasGeoData && geoData ? parseFloat(geoData.latitude) : null;
+  const lon = hasGeoData && geoData ? parseFloat(geoData.longitude) : null;
+  const localSun = (selectedDate && lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon))
+    ? computeSunRiseSet(selectedDate, lat, lon) : { rise: null, set: null };
+  const localMoon = (selectedDate && lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon))
+    ? computeMoonRiseSet(selectedDate, lat, lon) : { rise: null, set: null };
+
+  const sunRiseTime = apiSunRise ?? (localSun.rise ? localSun.rise.toISOString() : null);
+  const sunSetTime  = apiSunSet  ?? (localSun.set  ? localSun.set.toISOString()  : null);
+  const moonRiseTime = apiMoonRise ?? (localMoon.rise ? localMoon.rise.toISOString() : null);
+  const moonSetTime  = apiMoonSet  ?? (localMoon.set  ? localMoon.set.toISOString()  : null);
+  const sunIsEstimate  = !apiSunRise  && !apiSunSet  && (localSun.rise || localSun.set);
+  const moonIsEstimate = !apiMoonRise && !apiMoonSet && (localMoon.rise || localMoon.set);
+
   return (
     <div className="page-root planet-bg-root">
       <div
@@ -384,12 +502,20 @@ export default function CalendarPage() {
           </div>
 
           <div className="calendar-grid">
-            {DAYS.map((day, i) => (
-              <div key={day} className="cal-header-cell"
-                style={{ color: i === 0 ? "var(--clr-primary)" : "var(--clr-on-surface)" }}>
-                {day}
-              </div>
-            ))}
+            {DAYS.map((day, i) => {
+              const isSunday = i === 0;
+              const isCurrentDayOfWeek = !isSunday && i === today.getDay();
+              const color = isSunday
+                ? "var(--clr-error)"
+                : isCurrentDayOfWeek
+                  ? "var(--clr-primary)"
+                  : "var(--clr-on-surface)";
+              return (
+                <div key={day} className="cal-header-cell" style={{ color }}>
+                  {day}
+                </div>
+              );
+            })}
             {calendarCells.map((cell, i) => {
               if (cell.variant === "inactive") return (
                 <div key={i} className="cal-cell inactive">
@@ -459,7 +585,11 @@ export default function CalendarPage() {
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-tertiary)" }}>
                         WEATHER
                       </h4>
-                      {dayData.weather?.length > 0 ? (
+                      {!withinForecastWindow ? (
+                        <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
+                          Weather data only available within 10 days of today's date.
+                        </p>
+                      ) : dayData.weather?.length > 0 ? (
                         dayData.weather.map((p, i) => (
                           <div key={i} className="mb-2" style={{ fontSize: "0.85rem" }}>
                             <div><strong>{p.name}</strong></div>
@@ -473,9 +603,7 @@ export default function CalendarPage() {
                         ))
                       ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
-                          {!withinForecastWindow
-                            ? "Weather data only available within 10 days of today's date."
-                            : "Unavailable — weather.gov covers US locations only."}
+                          Unavailable — weather.gov covers US locations only.
                         </p>
                       )}
                     </div>
@@ -486,33 +614,32 @@ export default function CalendarPage() {
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
                         SUN
                       </h4>
-                      {(() => {
-                        const rise = sunEvents.find(ev => ev.type === "rise");
-                        const set = sunEvents.find(ev => ev.type === "set");
-                        return (rise || set) ? (
-                          <div className="d-flex flex-column align-items-center gap-1 mb-2">
-                            {rise && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <SunriseIcon size={16} /><span>Sunrise: <strong>{formatTime(rise.time)}</strong></span>
-                              </div>
-                            )}
-                            {set && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <SunsetIcon size={16} /><span>Sunset: <strong>{formatTime(set.time)}</strong></span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null;
-                      })()}
-                      {sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").length > 0 ? (
-                        sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
-                          <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
-                            {SUN_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
-                          </div>
-                        ))
-                      ) : sunEvents.length === 0 ? (
+                      {(sunRiseTime || sunSetTime) ? (
+                        <div className="d-flex flex-column align-items-center gap-1 mb-2">
+                          {sunRiseTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <SunriseIcon size={16} /><span>Sunrise: <strong>{formatTime(sunRiseTime)}</strong></span>
+                            </div>
+                          )}
+                          {sunSetTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <SunsetIcon size={16} /><span>Sunset: <strong>{formatTime(sunSetTime)}</strong></span>
+                            </div>
+                          )}
+                          {sunIsEstimate && (
+                            <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+                              Estimated
+                            </span>
+                          )}
+                        </div>
+                      ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
-                      ) : null}
+                      )}
+                      {sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
+                        <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+                          {SUN_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
+                        </div>
+                      ))}
                       <div className="d-flex justify-content-center mt-3">
                         <SunVisual size={72} />
                       </div>
@@ -524,33 +651,32 @@ export default function CalendarPage() {
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
                         MOON
                       </h4>
-                      {(() => {
-                        const rise = moonEvents.find(ev => ev.type === "rise");
-                        const set = moonEvents.find(ev => ev.type === "set");
-                        return (rise || set) ? (
-                          <div className="d-flex flex-column align-items-center gap-1 mb-2">
-                            {rise && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <MoonriseIcon size={16} /><span>Moonrise: <strong>{formatTime(rise.time)}</strong></span>
-                              </div>
-                            )}
-                            {set && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <MoonsetIcon size={16} /><span>Moonset: <strong>{formatTime(set.time)}</strong></span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null;
-                      })()}
-                      {moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").length > 0 ? (
-                        moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
-                          <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
-                            {MOON_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
-                          </div>
-                        ))
-                      ) : moonEvents.length === 0 ? (
+                      {(moonRiseTime || moonSetTime) ? (
+                        <div className="d-flex flex-column align-items-center gap-1 mb-2">
+                          {moonRiseTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <MoonriseIcon size={16} /><span>Moonrise: <strong>{formatTime(moonRiseTime)}</strong></span>
+                            </div>
+                          )}
+                          {moonSetTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <MoonsetIcon size={16} /><span>Moonset: <strong>{formatTime(moonSetTime)}</strong></span>
+                            </div>
+                          )}
+                          {moonIsEstimate && (
+                            <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+                              Estimated
+                            </span>
+                          )}
+                        </div>
+                      ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
-                      ) : null}
+                      )}
+                      {moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
+                        <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+                          {MOON_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
+                        </div>
+                      ))}
                       {moonPhaseData && (
                         <div className="d-flex flex-column align-items-center gap-1 mt-3">
                           <MoonPhaseVisual phase={moonPhaseData.phase} size={72} />
