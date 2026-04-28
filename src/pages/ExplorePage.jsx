@@ -11,6 +11,7 @@ import ExplorePageEvent from "../components/DataViews/ExplorePageEvent.jsx";
 import BookmarkService from "../GalileoBackendServices/BookmarksService.js";
 import EditBookmarkForm from "../components/forms/EditBookMarks.jsx";
 import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
 import { SatelliteInterface } from "../GalileoBackendServices/nasaSatelliteService.js";
 
 import neptuneImg from "../assets/neptune.jpg";
@@ -455,6 +456,8 @@ export default function ExplorePage() {
 
         </div>
       </main>
+
+      <SiteFooter />
 
       {/* MODAL - the popup if something is interacted with*/}
       {modal.type && (

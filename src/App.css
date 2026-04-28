@@ -1648,3 +1648,87 @@ body {
   .hero-heading { font-size: 2rem; }
   .hero-subtext { font-size: 0.95rem; }
 }
+
+/* ── Site footer (used across all pages) ── */
+.site-footer {
+  margin-top: auto;
+  position: relative;
+  z-index: 5;
+  padding-bottom: 6rem; /* clear mobile bottom nav */
+}
+@media (min-width: 992px) {
+  .site-footer {
+    padding-bottom: 1.5rem;
+  }
+}
+.login-page .site-footer,
+.legal-page .site-footer {
+  padding-bottom: 1.5rem;
+}
+
+/* ── Legal / info pages (Privacy, Terms, Acknowledgments) ── */
+.legal-page {
+  position: relative;
+}
+
+.legal-main {
+  position: relative;
+  z-index: 2;
+}
+
+.legal-meta {
+  color: var(--clr-on-surface-variant);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+
+.legal-panel {
+  color: var(--clr-on-surface);
+  line-height: 1.75;
+  font-size: 0.95rem;
+}
+.legal-panel p {
+  color: var(--clr-on-surface);
+  margin-bottom: 1.1rem;
+}
+.legal-panel strong { color: var(--clr-on-surface); }
+.legal-panel em { color: var(--clr-on-surface-variant); }
+
+.legal-heading {
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  color: var(--clr-primary);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.legal-list {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 1.25rem;
+}
+.legal-list li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--clr-on-surface-variant);
+}
+.legal-list li::before {
+  content: "✦";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--clr-secondary);
+  font-size: 0.8rem;
+  line-height: 1.75;
+}
+
+@media (max-width: 575px) {
+  .legal-panel { padding: 1.25rem !important; font-size: 0.9rem; }
+  .legal-heading { font-size: 1.05rem; }
+  .legal-page .hero-heading { font-size: 2rem; }
+}

@@ -7,6 +7,7 @@ import { WeatherService } from "../GalileoBackendServices/WeatherService";
 import AuthenticationService from "../auth/AuthenticationService";
 import BookmarkService from "../GalileoBackendServices/BookmarksService";
 import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
 import moonImg from "../assets/moon.jpg";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -539,6 +540,8 @@ export default function CalendarPage() {
           </div>
         </div>
       </main>
+
+      <SiteFooter />
 
       {modal.type && (
         <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
