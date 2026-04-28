@@ -26,7 +26,8 @@ const SIGNALS = [
 ];
 
 export default function ExplorePage() {
-  const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation } = useGeoLocation();
+  const { geoData, geoAPIDenied, hasGeoData, getLocation, checkGeoAutoAPI, setManualLocation, resetGeoDataLocalStorage } = useGeoLocation();
+  const [manualMode, setManualMode] = useState(false);
   const navigate = useNavigate();
 
   const [bookmarks, setBookmarks] = useState({ 1: true });
@@ -554,7 +555,18 @@ export default function ExplorePage() {
                   </button>
                 )}
 
-                {!hasGeoData && geoAPIDenied && (
+                { (
+
+                
+                <button
+                  className="btn-warp"
+                  onClick={() => setManualMode((prev) => !prev)}
+                >
+                  {manualMode ? "Hide Manual Entry" : "Enter Manually"}
+                </button>
+                )}
+
+                {(geoAPIDenied || manualMode) && (
                   <div className="d-flex flex-column gap-2 mb-3">
                     <input id="lat" placeholder="Latitude" type="number" className="galileo-input form-control" style={{ paddingLeft: "1rem" }} />
                     <input id="long" placeholder="Longitude" type="number" className="galileo-input form-control" style={{ paddingLeft: "1rem" }} />
@@ -567,6 +579,7 @@ export default function ExplorePage() {
                           document.getElementById("long").value,
                           document.getElementById("elev").value
                         )
+
                       }
                     >
                       Submit
@@ -576,7 +589,7 @@ export default function ExplorePage() {
 
                 <div className="bento-card mb-3" style={{ padding: "1rem" }}>
                   <div className="security-panel-label mb-2">
-                    {!geoAPIDenied ? "Automatic GeoLocation Data" : "Manual GeoLocation Data"}
+                    {(!geoAPIDenied && !manualMode) ? "Automatic GeoLocation Data" : "Manual GeoLocation Data"}
                   </div>
                   {hasGeoData ? (
                     <>
@@ -589,6 +602,21 @@ export default function ExplorePage() {
                     <p className="card-desc mb-0">No location data yet.</p>
                   )}
                 </div>
+
+                {hasGeoData && (
+                  <button
+                    className="btn-warp mb-3"
+                    onClick={() => {
+                      resetGeoDataLocalStorage();
+                      document.getElementById("lat").value = ""
+                      document.getElementById("long").value = ""
+                      document.getElementById("elev").value = ""
+                      setManualMode(false);
+                    }}
+                  >
+                    Reset Location
+                  </button>
+                )}
 
                 <button
                   className="btn-warp"
