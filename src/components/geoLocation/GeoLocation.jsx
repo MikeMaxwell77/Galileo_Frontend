@@ -128,6 +128,16 @@ export function useGeoLocation() {
 
     }
 
+    const resetGeoDataLocalStorage = () => {
+        const storedData = localStorage.getItem("GeoLocationData");
+
+        if (storedData){
+            localStorage.removeItem("GeoLocationData");
+            setHasGeoData(false);
+        }
+
+    }
+
 
     // useEffects
     useEffect(() => {
@@ -146,6 +156,7 @@ export function useGeoLocation() {
         geoAPISupported,
         getLocation,      // callable
         setManualLocation, // callable
-        checkGeoAutoAPI     // callable
+        checkGeoAutoAPI,    // callable
+        resetGeoDataLocalStorage // callable
     };
 };
