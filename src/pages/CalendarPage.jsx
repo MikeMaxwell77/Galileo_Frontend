@@ -4,6 +4,8 @@ import "./BookmarkPage.css";
 import { useGeoLocation } from "../components/geoLocation/GeoLocation";
 import { AstronomyBodiesInterface } from "../astronomyAPI/BodiesApi";
 import { WeatherService } from "../GalileoBackendServices/WeatherService";
+import AuthenticationService from "../auth/AuthenticationService";
+import BookmarkService from "../GalileoBackendServices/BookmarksService";
 import Navbar from "../components/Navbar";
 import moonImg from "../assets/moon.jpg";
 
@@ -178,6 +180,8 @@ export default function CalendarPage() {
   const [dayData, setDayData] = useState({ loading: false, weather: null, sunEvents: null, moonEvents: null });
   const [bodyPositions, setBodyPositions] = useState(null);
   const [liveTime, setLiveTime] = useState(new Date());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [bookmarks, setBookmarks] = useState([]);
 
   const shiftSelectedDay = (dir) => {
     if (modal.type !== "day" || !modal.data) return;
@@ -188,6 +192,13 @@ export default function CalendarPage() {
       data: { day: next.getDate(), month: next.getMonth(), year: next.getFullYear() },
     });
   };
+
+  useEffect(() => {
+    if (!AuthenticationService.isAuthenticated()) return;
+    BookmarkService.GetAuthUserBookmarks()
+      .then((data) => setBookmarks(Array.isArray(data) ? data : []))
+      .catch((err) => console.error("Failed to load bookmarks:", err));
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setLiveTime(new Date()), 1000);
@@ -212,6 +223,21 @@ export default function CalendarPage() {
       });
     }
 
+    // Stamp bookmarks that fall in this month/year onto their calendar day
+    if (bookmarks.length > 0) {
+      cells.forEach((cell) => {
+        if (cell.variant === "inactive" || !cell.events) return;
+        const cellDate = new Date(year, month, cell.day);
+        const cellStart = new Date(year, month, cell.day, 0, 0, 0, 0).getTime();
+        const cellEnd   = new Date(year, month, cell.day, 23, 59, 59, 999).getTime();
+        bookmarks.forEach((bm) => {
+          const bmTime = Number(bm.date);
+          if (!isNaN(bmTime) && bmTime >= cellStart && bmTime <= cellEnd) {
+            cell.events.push({ text: bm.displayName || "Bookmark", color: "primary" });
+          }
+        });
+      });
+    }
     setCalendarCells(cells);
   };
 
@@ -227,7 +253,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     buildCalendarCells(currentMonth, currentYear);
-  }, [currentMonth, currentYear]);
+  }, [currentMonth, currentYear, bookmarks]);
 
   useEffect(() => {
     if (modal.type !== "day" || !modal.data || !hasGeoData || !geoData) return;
@@ -572,8 +598,43 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                <div className="d-flex justify-content-center mt-4">
-                  <button className="btn-warp" style={{ maxWidth: "240px" }} onClick={() => setModal({ type: null, data: null })}>Close</button>
+                {(() => {
+                  if (!selDay) return null;
+                  const cellStart = new Date(selYear, selMonth, selDay, 0, 0, 0, 0).getTime();
+                  const cellEnd   = new Date(selYear, selMonth, selDay, 23, 59, 59, 999).getTime();
+                  const dayBookmarks = bookmarks.filter((bm) => {
+                    const t = Number(bm.date);
+                    return !isNaN(t) && t >= cellStart && t <= cellEnd;
+                  });
+                  if (dayBookmarks.length === 0) return null;
+                  return (
+                    <div className="mt-4">
+                      <h4 className="font-headline fw-bold mb-2"
+                        style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
+                        BOOKMARKS
+                      </h4>
+                      <div className="d-flex flex-column gap-2">
+                        {dayBookmarks.map((bm, i) => (
+                          <div key={i} className="d-flex align-items-center gap-2"
+                            style={{ fontSize: "0.85rem", padding: "0.4rem 0.6rem", borderRadius: "6px",
+                              background: "rgba(var(--clr-primary-rgb, 180,120,255),0.08)",
+                              border: "1px solid rgba(var(--clr-primary-rgb, 180,120,255),0.2)" }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: "1rem", color: "var(--clr-primary)" }}>bookmark</span>
+                            <span style={{ fontWeight: 600 }}>{bm.displayName || "Bookmark"}</span>
+                            {bm.whichAPI && (
+                              <span style={{ color: "var(--clr-on-surface-variant)", fontSize: "0.75rem", marginLeft: "auto" }}>
+                                {bm.whichAPI}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="d-flex gap-2 mt-4">
+                  <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>Close</button>
                 </div>
               </>
             )}
