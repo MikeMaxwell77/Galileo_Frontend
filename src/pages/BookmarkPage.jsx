@@ -11,6 +11,7 @@ import { GALILEO_BACKEND_SEARCH_ACCOUNT } from "../GalileoBackendServices/backen
 
 import jupiterImg from "../assets/jupiter.png";
 
+import EditBookmarkForm from "../components/forms/EditBookMarks.jsx";
 import "./BookmarkPage.css"
 
 export default function BookmarksPage() {
@@ -231,6 +232,7 @@ export default function BookmarksPage() {
                       <th className="bookmarks-th">Observer Pos - long : lat</th>
                       <th className="bookmarks-th">Bookmark Date</th>
                       <th className="bookmarks-th">API</th>
+                      <th className="bookmarks-th text-center">Edit</th>
                       <th className="bookmarks-th text-end">Delete bookmark</th>
                     </tr>
                   </thead>
@@ -276,6 +278,16 @@ export default function BookmarksPage() {
                           {/* API */}
                           <td className="bookmarks-td text-end">
                             {sig.API}
+                          </td>
+
+                          <td className="bookmarks-td text-center">
+                            <button
+                              className="galileo-action-btn"
+                              onClick={() => setModal({ type: "edit", data: bm })}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: "1rem", verticalAlign: "middle" }}>edit</span>
+                              {" "}Edit
+                            </button>
                           </td>
 
                           <td className="bookmarks-td text-end">
@@ -333,7 +345,7 @@ export default function BookmarksPage() {
                       <th className="bookmarks-th">Observer Pos - long : lat</th>
                       <th className="bookmarks-th">Bookmark Date</th>
                       <th className="bookmarks-th">API</th>
-                      <th className="bookmarks-th text-end">Delete bookmark</th>
+                      <th className="bookmarks-th text-end">Yank bookmark</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -439,6 +451,25 @@ export default function BookmarksPage() {
                 </>
               )}
 
+
+              {/* EDIT BOOKMARK MODAL */}
+              {modal.type === "edit" && (
+                <>
+                  <h2 className="font-headline fw-bold mb-1">Edit Bookmark</h2>
+                  <p className="mb-3" style={{ color: "var(--clr-on-surface-variant)" }}>
+                    {modal.data?.displayName}
+                  </p>
+                  <EditBookmarkForm
+                    existingBookmarkId={modal.data?.id}
+                    bookmark={modal.data}
+                    onSuccess={() => {
+                      setModal({ type: null, data: null });
+                      loadMyBookmarks();
+                    }}
+                    onCancel={() => setModal({ type: null, data: null })}
+                  />
+                </>
+              )}
 
               {/* LOGIN MODAL */}
               {modal.type === "login" && (

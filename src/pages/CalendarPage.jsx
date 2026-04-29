@@ -328,8 +328,8 @@ export default function CalendarPage() {
       cells.forEach((cell) => {
         if (cell.variant === "inactive" || !cell.events) return;
         const cellDate = new Date(year, month, cell.day);
-        const cellStart = new Date(year, month, cell.day, 0, 0, 0, 0).getTime();
-        const cellEnd   = new Date(year, month, cell.day, 23, 59, 59, 999).getTime();
+        const cellStart = new Date(year, month, cell.day-1, 0, 0, 0, 0).getTime();
+        const cellEnd   = new Date(year, month, cell.day-1, 23, 59, 59, 999).getTime();
         bookmarks.forEach((bm) => {
           const bmTime = Number(bm.date);
           if (!isNaN(bmTime) && bmTime >= cellStart && bmTime <= cellEnd) {
