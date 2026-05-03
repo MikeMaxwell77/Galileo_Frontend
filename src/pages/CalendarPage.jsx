@@ -1,24 +1,20 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import "./CalendarPage.css";
+import "./BookmarkPage.css";
 import { useGeoLocation } from "../components/geoLocation/GeoLocation";
 import { AstronomyBodiesInterface } from "../astronomyAPI/BodiesApi";
 import { WeatherService } from "../GalileoBackendServices/WeatherService";
 import AuthenticationService from "../auth/AuthenticationService";
+import BookmarkService from "../GalileoBackendServices/BookmarksService";
+import Navbar from "../components/Navbar";
+import SiteFooter from "../components/SiteFooter";
+import moonImg from "../assets/moon.jpg";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
-];
-
-const NAV_ITEMS = [
-  { label: "Home", icon: "space_dashboard", path: "/home" },
-  { label: "Explore", icon: "explore", path: "/explore" },
-  { label: "Calendar", icon: "calendar_month", path: "/calendar", active: true },
-  { label: "Bookmarks", icon: "bookmarks", path: "/bookmarks" },
-  { label: "Account", icon: "person", path: "/account" },
 ];
 
 const getMoonPhaseData = (date) => {
@@ -37,22 +33,12 @@ const getMoonPhaseData = (date) => {
   return { phase: pct, name };
 };
 
-// SVG sun disc — static, always fully illuminated
+// SVG sun disc — full yellow disc, matches moon disc size
 const SunVisual = ({ size = 72 }) => {
   const r = (size - 4) / 2;
-  const rays = [0, 45, 90, 135, 180, 225, 270, 315];
   return (
     <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`}>
-      <circle r={r} fill="rgba(255,210,80,0.08)" stroke="rgba(255,210,80,0.2)" strokeWidth="1" />
-      {rays.map((angle, i) => {
-        const rad = (angle * Math.PI) / 180;
-        const x1 = Math.cos(rad) * (r * 0.65);
-        const y1 = Math.sin(rad) * (r * 0.65);
-        const x2 = Math.cos(rad) * (r * 0.88);
-        const y2 = Math.sin(rad) * (r * 0.88);
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,210,80,0.75)" strokeWidth="1.5" strokeLinecap="round" />;
-      })}
-      <circle r={r * 0.5} fill="rgba(255,210,80,0.95)" />
+      <circle r={r} fill="rgba(255,210,80,0.95)" stroke="rgba(255,240,200,0.5)" strokeWidth="1" />
     </svg>
   );
 };
@@ -90,6 +76,105 @@ const formatTime = (isoString) => {
   if (!isoString) return "—";
   try { return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
   catch { return "—"; }
+};
+
+const _toRad = (d) => d * Math.PI / 180;
+const _toDeg = (r) => r * 180 / Math.PI;
+const _clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const _norm360 = (d) => ((d % 360) + 360) % 360;
+
+const _utDateFromDecimalHours = (refDate, ut) => {
+  const norm = ((ut % 24) + 24) % 24;
+  const h = Math.floor(norm);
+  const m = Math.round((norm - h) * 60);
+  return new Date(Date.UTC(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), h, m));
+};
+
+// NOAA-derived sunrise/sunset approximation (accurate to ~1 minute for mid-latitudes).
+const computeSunRiseSet = (date, lat, lon) => {
+  const start = new Date(Date.UTC(date.getFullYear(), 0, 0));
+  const N = Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - start.getTime()) / 86400000);
+  const lngHour = lon / 15;
+
+  const calc = (rising) => {
+    const t = N + ((rising ? 6 : 18) - lngHour) / 24;
+    const M = (0.9856 * t) - 3.289;
+    let L = M + (1.916 * Math.sin(_toRad(M))) + (0.020 * Math.sin(_toRad(2 * M))) + 282.634;
+    L = _norm360(L);
+    let RA = _toDeg(Math.atan(0.91764 * Math.tan(_toRad(L))));
+    RA = _norm360(RA);
+    RA = (RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90)) / 15;
+    const sinDec = 0.39782 * Math.sin(_toRad(L));
+    const cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(_toRad(90.833)) - sinDec * Math.sin(_toRad(lat))) / (cosDec * Math.cos(_toRad(lat)));
+    if (cosH > 1 || cosH < -1) return null;
+    let H = rising ? 360 - _toDeg(Math.acos(cosH)) : _toDeg(Math.acos(cosH));
+    H = H / 15;
+    const T = H + RA - (0.06571 * t) - 6.622;
+    return _utDateFromDecimalHours(date, T - lngHour);
+  };
+
+  return { rise: calc(true), set: calc(false) };
+};
+
+// Geocentric moon altitude for a UTC instant. Simplified — accurate to ~0.5° but
+// good enough for rise/set within a few minutes.
+const _moonAltitude = (whenUtc, lat, lon) => {
+  const d = (whenUtc.getTime() / 86400000) + 2440587.5 - 2451545.0;
+  const N = _norm360(125.1228 - 0.0529538083 * d);
+  const i = 5.1454;
+  const w = _norm360(318.0634 + 0.1643573223 * d);
+  const a = 60.2666;
+  const e = 0.054900;
+  const M = _norm360(115.3654 + 13.0649929509 * d);
+  let E = M + _toDeg(e * Math.sin(_toRad(M)) * (1 + e * Math.cos(_toRad(M))));
+  for (let k = 0; k < 8; k++) {
+    const dE = (E - _toDeg(e) * Math.sin(_toRad(E)) - M) / (1 - e * Math.cos(_toRad(E)));
+    E -= dE;
+    if (Math.abs(dE) < 1e-5) break;
+  }
+  const xv = a * (Math.cos(_toRad(E)) - e);
+  const yv = a * Math.sqrt(1 - e * e) * Math.sin(_toRad(E));
+  const v = _toDeg(Math.atan2(yv, xv));
+  const r = Math.sqrt(xv * xv + yv * yv);
+  const xeclip = r * (Math.cos(_toRad(N)) * Math.cos(_toRad(v + w)) - Math.sin(_toRad(N)) * Math.sin(_toRad(v + w)) * Math.cos(_toRad(i)));
+  const yeclip = r * (Math.sin(_toRad(N)) * Math.cos(_toRad(v + w)) + Math.cos(_toRad(N)) * Math.sin(_toRad(v + w)) * Math.cos(_toRad(i)));
+  const zeclip = r * Math.sin(_toRad(v + w)) * Math.sin(_toRad(i));
+  const obl = 23.4393 - 3.563e-7 * d;
+  const yEq = yeclip * Math.cos(_toRad(obl)) - zeclip * Math.sin(_toRad(obl));
+  const zEq = yeclip * Math.sin(_toRad(obl)) + zeclip * Math.cos(_toRad(obl));
+  const ra = _toDeg(Math.atan2(yEq, xeclip));
+  const dec = _toDeg(Math.atan2(zEq, Math.sqrt(xeclip * xeclip + yEq * yEq)));
+  const utHours = whenUtc.getUTCHours() + whenUtc.getUTCMinutes() / 60 + whenUtc.getUTCSeconds() / 3600;
+  const gmst = _norm360(280.46061837 + 360.98564736629 * d + 0.000387933 * (d / 36525) * (d / 36525));
+  const lst = _norm360(gmst + lon);
+  const ha = _norm360(lst - ra);
+  const sinAlt = Math.sin(_toRad(lat)) * Math.sin(_toRad(dec)) + Math.cos(_toRad(lat)) * Math.cos(_toRad(dec)) * Math.cos(_toRad(ha));
+  return _toDeg(Math.asin(_clamp(sinAlt, -1, 1)));
+};
+
+// Sweep moon altitude across the local day (in 30-min steps), find sign-change for rise/set.
+const computeMoonRiseSet = (date, lat, lon) => {
+  const tzOffsetMin = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTimezoneOffset();
+  const dayStartLocalUtc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) + tzOffsetMin * 60000);
+  const refraction = -0.583;
+  let prev = _moonAltitude(dayStartLocalUtc, lat, lon) - refraction;
+  let rise = null, set = null;
+  const steps = 48;
+  for (let s = 1; s <= steps; s++) {
+    const when = new Date(dayStartLocalUtc.getTime() + s * 30 * 60000);
+    const cur = _moonAltitude(when, lat, lon) - refraction;
+    if (!rise && prev < 0 && cur >= 0) {
+      const frac = -prev / (cur - prev);
+      rise = new Date(dayStartLocalUtc.getTime() + (s - 1 + frac) * 30 * 60000);
+    }
+    if (!set && prev >= 0 && cur < 0) {
+      const frac = prev / (prev - cur);
+      set = new Date(dayStartLocalUtc.getTime() + (s - 1 + frac) * 30 * 60000);
+    }
+    prev = cur;
+  }
+  return { rise, set };
 };
 
 const WeatherIcon = ({ size = 22 }) => (
@@ -185,7 +270,6 @@ const _getCache = (key) => {
 const _setCache = (key, data) => _cache.set(key, { data, ts: Date.now() });
 
 export default function CalendarPage() {
-  const navigate = useNavigate();
   const today = new Date();
   const { geoData, hasGeoData } = useGeoLocation();
 
@@ -197,9 +281,23 @@ export default function CalendarPage() {
   const [bodyPositions, setBodyPositions] = useState(null);
   const [liveTime, setLiveTime] = useState(new Date());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [bookmarks, setBookmarks] = useState([]);
+
+  const shiftSelectedDay = (dir) => {
+    if (modal.type !== "day" || !modal.data) return;
+    const { day, month, year } = modal.data;
+    const next = new Date(year, month, day + dir);
+    setModal({
+      type: "day",
+      data: { day: next.getDate(), month: next.getMonth(), year: next.getFullYear() },
+    });
+  };
 
   useEffect(() => {
-    setIsAuthenticated(AuthenticationService.isAuthenticated());
+    if (!AuthenticationService.isAuthenticated()) return;
+    BookmarkService.GetAuthUserBookmarks()
+      .then((data) => setBookmarks(Array.isArray(data) ? data : []))
+      .catch((err) => console.error("Failed to load bookmarks:", err));
   }, []);
 
   useEffect(() => {
@@ -225,6 +323,21 @@ export default function CalendarPage() {
       });
     }
 
+    // Stamp bookmarks that fall in this month/year onto their calendar day
+    if (bookmarks.length > 0) {
+      cells.forEach((cell) => {
+        if (cell.variant === "inactive" || !cell.events) return;
+        const cellDate = new Date(year, month, cell.day);
+        const cellStart = new Date(year, month, cell.day-1, 0, 0, 0, 0).getTime();
+        const cellEnd   = new Date(year, month, cell.day-1, 23, 59, 59, 999).getTime();
+        bookmarks.forEach((bm) => {
+          const bmTime = Number(bm.date);
+          if (!isNaN(bmTime) && bmTime >= cellStart && bmTime <= cellEnd) {
+            cell.events.push({ text: bm.displayName || "Bookmark", color: "primary" });
+          }
+        });
+      });
+    }
     setCalendarCells(cells);
   };
 
@@ -240,7 +353,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     buildCalendarCells(currentMonth, currentYear);
-  }, [currentMonth, currentYear]);
+  }, [currentMonth, currentYear, bookmarks]);
 
   useEffect(() => {
     if (modal.type !== "day" || !modal.data || !hasGeoData || !geoData) return;
@@ -329,47 +442,50 @@ export default function CalendarPage() {
   const sunEvents = dayData.sunEvents?.data?.rows?.[0]?.events ?? [];
   const moonEvents = dayData.moonEvents?.data?.rows?.[0]?.events ?? [];
 
-  return (
-    <div className="page-root">
-      <nav className="top-nav">
-        <div className="galileo-logo font-headline fw-bold fs-4">Galileo</div>
-        <div className="d-none d-md-flex align-items-center gap-4">
-          <Link to="/home" className="nav-link-item">Home</Link>
-          <Link to="/explore" className="nav-link-item">Explore</Link>
-          <Link to="/calendar" className="nav-link-item active">Calendar</Link>
-          <Link to="/bookmarks" className="nav-link-item">Bookmarks</Link>
-        </div>
-        <div className="d-flex align-items-center gap-3">
-          {!isAuthenticated && <button className="btn-warp btn-warp-sm" onClick={() => navigate("/login")}>Login</button>}
-          <button className="icon-btn"><span className="material-symbols-outlined">account_circle</span></button>
-        </div>
-      </nav>
+  const apiSunRise = sunEvents.find(ev => ev.type === "rise")?.time ?? null;
+  const apiSunSet  = sunEvents.find(ev => ev.type === "set")?.time ?? null;
+  const apiMoonRise = moonEvents.find(ev => ev.type === "rise")?.time ?? null;
+  const apiMoonSet  = moonEvents.find(ev => ev.type === "set")?.time ?? null;
 
-      <aside className="sidebar d-none d-lg-flex flex-column">
-        <div className="sidebar-inner">
-          <div className="galileo-logo font-headline fw-black mb-1">Galileo</div>
-          <div className="sidebar-section-label">Navigation</div>
-          <nav className="d-flex flex-column gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.label} to={item.path} className={`sidebar-link ${item.active ? "active" : ""}`}>
-                <span className="material-symbols-outlined">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="sidebar-footer">
-          <button className="sidebar-new-obs-btn">New Observation</button>
-        </div>
-      </aside>
+  const lat = hasGeoData && geoData ? parseFloat(geoData.latitude) : null;
+  const lon = hasGeoData && geoData ? parseFloat(geoData.longitude) : null;
+  const localSun = (selectedDate && lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon))
+    ? computeSunRiseSet(selectedDate, lat, lon) : { rise: null, set: null };
+  const localMoon = (selectedDate && lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon))
+    ? computeMoonRiseSet(selectedDate, lat, lon) : { rise: null, set: null };
+
+  const sunRiseTime = apiSunRise ?? (localSun.rise ? localSun.rise.toISOString() : null);
+  const sunSetTime  = apiSunSet  ?? (localSun.set  ? localSun.set.toISOString()  : null);
+  const moonRiseTime = apiMoonRise ?? (localMoon.rise ? localMoon.rise.toISOString() : null);
+  const moonSetTime  = apiMoonSet  ?? (localMoon.set  ? localMoon.set.toISOString()  : null);
+  const sunIsEstimate  = !apiSunRise  && !apiSunSet  && (localSun.rise || localSun.set);
+  const moonIsEstimate = !apiMoonRise && !apiMoonSet && (localMoon.rise || localMoon.set);
+
+  return (
+    <div className="page-root planet-bg-root">
+      <div
+        className="planet-bg"
+        style={{ backgroundImage: `url(${moonImg})` }}
+      />
+      <div className="planet-bg-fade" />
+
+      <Navbar active="calendar" />
 
       <main className="page-main">
         <div className="page-content">
+          <header className="mb-4">
+            <h1 className="font-headline fw-bold page-title mb-0">
+              Celestial <span className="text-gradient">Calendar</span>
+            </h1>
+          </header>
+
           <div className="d-flex justify-content-between align-items-end mb-4">
             <div>
-              <h1 className="font-headline fw-bold page-title mb-1">
-                {MONTH_NAMES[currentMonth]} {currentYear}
-              </h1>
+              <h2 className="font-headline fw-bold page-title mb-1">
+                <span className="text-gradient">
+                  {MONTH_NAMES[currentMonth]} {currentYear}
+                </span>
+              </h2>
               <p className="page-subtitle mb-0">
                 {liveTime.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                 {" || "}
@@ -387,12 +503,20 @@ export default function CalendarPage() {
           </div>
 
           <div className="calendar-grid">
-            {DAYS.map((day, i) => (
-              <div key={day} className="cal-header-cell"
-                style={{ color: i === 0 ? "var(--clr-primary)" : "var(--clr-on-surface)" }}>
-                {day}
-              </div>
-            ))}
+            {DAYS.map((day, i) => {
+              const isSunday = i === 0;
+              const isCurrentDayOfWeek = !isSunday && i === today.getDay();
+              const color = isSunday
+                ? "var(--clr-error)"
+                : isCurrentDayOfWeek
+                  ? "var(--clr-primary)"
+                  : "var(--clr-on-surface)";
+              return (
+                <div key={day} className="cal-header-cell" style={{ color }}>
+                  {day}
+                </div>
+              );
+            })}
             {calendarCells.map((cell, i) => {
               if (cell.variant === "inactive") return (
                 <div key={i} className="cal-cell inactive">
@@ -417,38 +541,58 @@ export default function CalendarPage() {
         </div>
       </main>
 
+      <SiteFooter />
+
       {modal.type && (
         <div className="modal-overlay" onClick={() => setModal({ type: null, data: null })}>
           <div className="cal-modal-content" onClick={(e) => e.stopPropagation()}>
 
             {modal.type === "day" && (
               <>
-                <div className="mb-4" style={{ textAlign: "center" }}>
-                  <h2 className="font-headline fw-bold mb-0">
+                <div className="mb-4 d-flex justify-content-between align-items-center gap-3">
+                  <button
+                    className="nav-chevron-btn cal-day-edge-btn"
+                    onClick={() => shiftSelectedDay(-1)}
+                    aria-label="Previous day"
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                  <h2 className="font-headline fw-bold mb-0 text-center flex-grow-1">
                     {MONTH_NAMES[selMonth]} {selDay}, {selYear}
                   </h2>
+                  <button
+                    className="nav-chevron-btn cal-day-edge-btn"
+                    onClick={() => shiftSelectedDay(1)}
+                    aria-label="Next day"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
                 </div>
 
                 {!hasGeoData && (
-                  <p className="page-subtitle">
+                  <p className="page-subtitle text-center">
                     Share your location on the Explore page to see sky events and local weather.
                   </p>
                 )}
 
                 {hasGeoData && dayData.loading && (
-                  <p className="page-subtitle">Loading sky data...</p>
+                  <p className="page-subtitle text-center">Loading sky data...</p>
                 )}
 
                 {hasGeoData && !dayData.loading && (
-                  <div className="row g-4">
+                  <div className="row g-4 justify-content-center">
 
-                    <div className="col-12 col-md-6">
-                      <div className="mb-1"><WeatherIcon size={22} /></div>
-                      <h4 className="font-headline fw-bold mb-2"
+                    <div className="col-12 col-md-6 d-flex flex-column align-items-center text-center">
+                      <div className="mb-2"><WeatherIcon size={36} /></div>
+                      <h4 className="font-headline fw-bold mb-3"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-tertiary)" }}>
                         WEATHER
                       </h4>
-                      {dayData.weather?.length > 0 ? (
+                      {!withinForecastWindow ? (
+                        <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
+                          Weather data only available within 10 days of today's date.
+                        </p>
+                      ) : dayData.weather?.length > 0 ? (
                         dayData.weather.map((p, i) => (
                           <div key={i} className="mb-2" style={{ fontSize: "0.85rem" }}>
                             <div><strong>{p.name}</strong></div>
@@ -462,82 +606,80 @@ export default function CalendarPage() {
                         ))
                       ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>
-                          {!withinForecastWindow
-                            ? "Weather data only available within 10 days of today's date."
-                            : "Unavailable — weather.gov covers US locations only."}
+                          Unavailable — weather.gov covers US locations only.
                         </p>
                       )}
                     </div>
 
-                    <div className="col-12 col-md-3">
-                      <h4 className="font-headline fw-bold mb-2"
+                    <div className="col-12 col-md-3 d-flex flex-column align-items-center text-center">
+                      <div className="mb-2"><SunVisual size={36} /></div>
+                      <h4 className="font-headline fw-bold mb-3"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
                         SUN
                       </h4>
-                      {(() => {
-                        const rise = sunEvents.find(ev => ev.type === "rise");
-                        const set = sunEvents.find(ev => ev.type === "set");
-                        return (rise || set) ? (
-                          <div className="d-flex flex-column gap-1 mb-2">
-                            {rise && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <SunriseIcon size={16} /><span>Sunrise: <strong>{formatTime(rise.time)}</strong></span>
-                              </div>
-                            )}
-                            {set && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <SunsetIcon size={16} /><span>Sunset: <strong>{formatTime(set.time)}</strong></span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null;
-                      })()}
-                      {sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").length > 0 ? (
-                        sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
-                          <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
-                            {SUN_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
-                          </div>
-                        ))
-                      ) : sunEvents.length === 0 ? (
+                      {(sunRiseTime || sunSetTime) ? (
+                        <div className="d-flex flex-column align-items-center gap-1 mb-2">
+                          {sunRiseTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <SunriseIcon size={16} /><span>Sunrise: <strong>{formatTime(sunRiseTime)}</strong></span>
+                            </div>
+                          )}
+                          {sunSetTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <SunsetIcon size={16} /><span>Sunset: <strong>{formatTime(sunSetTime)}</strong></span>
+                            </div>
+                          )}
+                          {sunIsEstimate && (
+                            <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+                              Estimated
+                            </span>
+                          )}
+                        </div>
+                      ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
-                      ) : null}
+                      )}
+                      {sunEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
+                        <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+                          {SUN_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
+                        </div>
+                      ))}
                       <div className="d-flex justify-content-center mt-3">
                         <SunVisual size={72} />
                       </div>
                     </div>
 
-                    <div className="col-12 col-md-3">
-                      <h4 className="font-headline fw-bold mb-2"
+                    <div className="col-12 col-md-3 d-flex flex-column align-items-center text-center">
+                      <div className="mb-2"><MoonIcon size={36} /></div>
+                      <h4 className="font-headline fw-bold mb-3"
                         style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-secondary)" }}>
                         MOON
                       </h4>
-                      {(() => {
-                        const rise = moonEvents.find(ev => ev.type === "rise");
-                        const set = moonEvents.find(ev => ev.type === "set");
-                        return (rise || set) ? (
-                          <div className="d-flex flex-column gap-1 mb-2">
-                            {rise && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <MoonriseIcon size={16} /><span>Moonrise: <strong>{formatTime(rise.time)}</strong></span>
-                              </div>
-                            )}
-                            {set && (
-                              <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <MoonsetIcon size={16} /><span>Moonset: <strong>{formatTime(set.time)}</strong></span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null;
-                      })()}
-                      {moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").length > 0 ? (
-                        moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
-                          <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
-                            {MOON_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
-                          </div>
-                        ))
-                      ) : moonEvents.length === 0 ? (
+                      {(moonRiseTime || moonSetTime) ? (
+                        <div className="d-flex flex-column align-items-center gap-1 mb-2">
+                          {moonRiseTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <MoonriseIcon size={16} /><span>Moonrise: <strong>{formatTime(moonRiseTime)}</strong></span>
+                            </div>
+                          )}
+                          {moonSetTime && (
+                            <div style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <MoonsetIcon size={16} /><span>Moonset: <strong>{formatTime(moonSetTime)}</strong></span>
+                            </div>
+                          )}
+                          {moonIsEstimate && (
+                            <span className="page-subtitle mb-0" style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+                              Estimated
+                            </span>
+                          )}
+                        </div>
+                      ) : (
                         <p className="page-subtitle mb-0" style={{ fontSize: "0.8rem" }}>No events found.</p>
-                      ) : null}
+                      )}
+                      {moonEvents.filter(ev => ev.type !== "rise" && ev.type !== "set").map((ev, i) => (
+                        <div key={i} style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+                          {MOON_EVENT_LABELS[ev.type] ?? ev.type}: <strong>{formatTime(ev.time)}</strong>
+                        </div>
+                      ))}
                       {moonPhaseData && (
                         <div className="d-flex flex-column align-items-center gap-1 mt-3">
                           <MoonPhaseVisual phase={moonPhaseData.phase} size={72} />
@@ -555,13 +697,13 @@ export default function CalendarPage() {
                       const filtered = rows.filter(r => PRIORITY.includes(r.body?.id));
                       if (filtered.length === 0) return null;
                       return (
-                        <div className="col-12">
-                          <div className="mb-1"><PlanetIcon size={22} /></div>
-                          <h4 className="font-headline fw-bold mb-2"
+                        <div className="col-12 d-flex flex-column align-items-center text-center">
+                          <div className="mb-2"><PlanetIcon size={28} /></div>
+                          <h4 className="font-headline fw-bold mb-3"
                             style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-on-surface-variant)" }}>
                             PLANET POSITIONS
                           </h4>
-                          <div className="d-flex flex-wrap gap-4">
+                          <div className="d-flex flex-wrap justify-content-center gap-4">
                             {filtered.map((row, i) => {
                               const pos = (row.positions ?? []).find(p => typeof p.date === "string" && p.date.startsWith(dateStr));
                               if (!pos) return null;
@@ -584,6 +726,41 @@ export default function CalendarPage() {
 
                   </div>
                 )}
+
+                {(() => {
+                  if (!selDay) return null;
+                  const cellStart = new Date(selYear, selMonth, selDay, 0, 0, 0, 0).getTime();
+                  const cellEnd   = new Date(selYear, selMonth, selDay, 23, 59, 59, 999).getTime();
+                  const dayBookmarks = bookmarks.filter((bm) => {
+                    const t = Number(bm.date);
+                    return !isNaN(t) && t >= cellStart && t <= cellEnd;
+                  });
+                  if (dayBookmarks.length === 0) return null;
+                  return (
+                    <div className="mt-4">
+                      <h4 className="font-headline fw-bold mb-2"
+                        style={{ fontSize: "0.7rem", letterSpacing: "0.12em", color: "var(--clr-primary)" }}>
+                        BOOKMARKS
+                      </h4>
+                      <div className="d-flex flex-column gap-2">
+                        {dayBookmarks.map((bm, i) => (
+                          <div key={i} className="d-flex align-items-center gap-2"
+                            style={{ fontSize: "0.85rem", padding: "0.4rem 0.6rem", borderRadius: "6px",
+                              background: "rgba(var(--clr-primary-rgb, 180,120,255),0.08)",
+                              border: "1px solid rgba(var(--clr-primary-rgb, 180,120,255),0.2)" }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: "1rem", color: "var(--clr-primary)" }}>bookmark</span>
+                            <span style={{ fontWeight: 600 }}>{bm.displayName || "Bookmark"}</span>
+                            {bm.whichAPI && (
+                              <span style={{ color: "var(--clr-on-surface-variant)", fontSize: "0.75rem", marginLeft: "auto" }}>
+                                {bm.whichAPI}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="d-flex gap-2 mt-4">
                   <button className="btn-warp" onClick={() => setModal({ type: null, data: null })}>Close</button>

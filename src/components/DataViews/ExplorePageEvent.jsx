@@ -1,3 +1,4 @@
+// Explore Page Event
 import { useState } from "react";
 
 const eventTemplate = {
@@ -8,7 +9,7 @@ const eventTemplate = {
 
 }
 
-export default function ExplorePageEvent({ data, isSaved, onToggleBookmark, onOpen }) {
+export default function ExplorePageEvent({ data, isSaved, onToggleBookmark, onOpen, onEdit }) {
 
     return (
         <div className="signal-card h-100">
@@ -45,10 +46,17 @@ export default function ExplorePageEvent({ data, isSaved, onToggleBookmark, onOp
 
             <div className="d-flex justify-content-between align-items-center card-footer-row">
                 <span className="scan-time">Last Scanned:</span>
-                <button className="open-signal-link" onClick={onOpen}>
-                    OPEN SIGNAL
-                    <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
+                <div className="d-flex align-items-center gap-2">
+                    {isSaved && (
+                        <button className="edit-bookmark-btn" onClick={onEdit} title="Edit bookmark">
+                            <span className="material-symbols-outlined">edit</span>
+                        </button>
+                    )}
+                    <button className="open-signal-link" onClick={onOpen}>
+                        OPEN SIGNAL
+                        <span className="material-symbols-outlined">arrow_forward</span>
+                    </button>
+                </div>
             </div>
 
         </div>
