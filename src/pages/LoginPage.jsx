@@ -127,10 +127,13 @@ export default function LoginPage() {
                 </div>
 
                 <div>
+                  {/*
+                  {<div className="d-flex justify-content-between align-items-center mb-1">
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <label className="field-label">Access Code</label>
                     {activeTab === "login" && <a href="#" className="lost-code-link">Lost Code?</a>}
                   </div>
+                  */}
                   <div className="position-relative">
                     <span className="material-symbols-outlined input-icon">lock</span>
                     <input 
